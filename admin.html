@@ -123,11 +123,13 @@
       .sidebar,.topbar,.no-print{display:none!important}
       .main{margin-left:0}
       .content{padding:0}
-      /* ocultar todo el contenido de la seccion horario excepto el area imprimible */
-      #sec-horario .card{display:none!important}
-      .print-area{display:block!important}
+      .matrix-controls{display:none!important}
+      #asignados-card{display:none!important}
+      .print-header{display:block!important}
+      .print-area{display:none!important}
     }
     .print-area{display:none}
+    .print-header{display:none}
 
     .divider{height:1px;background:var(--border);margin:20px 0}
     .text-muted{color:var(--muted);font-size:13px}
@@ -198,6 +200,10 @@
 
     <!-- HORARIO -->
     <div class="section" id="sec-horario">
+      <div class="print-header" id="print-header">
+        <h2 style="font-family:'Playfair Display',Georgia,serif;color:#1A3835;margin:0 0 4px">Academia Murray Rothbard — Horario</h2>
+        <p id="print-subtitulo" style="color:#637875;font-size:13px;margin:0 0 16px"></p>
+      </div>
       <div class="card" style="margin-bottom:20px">
         <div class="card-title">Disponibilidad semanal</div>
         <div class="matrix-controls">
@@ -213,7 +219,7 @@
           <div class="leg"><div class="leg-dot" style="background:#ADC9F5;border:2px solid #7AAAF0"></div> Asignado</div>
         </div>
       </div>
-      <div class="card">
+      <div class="card" id="asignados-card">
         <div class="card-title">Horarios asignados</div>
         <div id="asignados-list"></div>
         <button class="btn btn-outline btn-sm mt-16 no-print" onclick="printHorario()">🖨 Imprimir horario</button>
@@ -602,42 +608,13 @@ function renderAsignados() {
 function printHorario() {
   const db = getDB();
   const activos = db.horarios_asignados.filter(a => a.activo);
-
-  // Calcular rango de días con actividad
   const diasActivos = DAYS.filter(d =>
     (db.horario_disponible[d] || []).length > 0 || activos.some(a => a.dia === d)
   );
   const subtitulo = diasActivos.length >= 2
     ? `Horario disponible de ${diasActivos[0]} a ${diasActivos[diasActivos.length - 1]}`
     : diasActivos.length === 1 ? `Horario disponible: ${diasActivos[0]}` : 'Horario semanal';
-
-  const thStyle = 'padding:7px 8px;background:#1A3835;color:#F3EDD8;font-size:11px;white-space:nowrap;border:1px solid #0d2220';
-  const tdStyle = 'padding:7px 8px;text-align:center;border:1px solid #ddd;font-size:12px;white-space:nowrap;min-width:56px';
-  const tdLbl   = 'padding:7px 10px;font-weight:600;background:#f5f5f3;white-space:nowrap;font-size:12px;border:1px solid #ddd';
-  let rows = '';
-  DAYS.forEach(day => {
-    let row = `<tr><td style="${tdLbl}">${day}</td>`;
-    HOURS.forEach(h => {
-      const avail = (db.horario_disponible[day] || []).includes(h);
-      const asig  = activos.find(a => a.dia === day && a.hora === h);
-      const hijo  = asig ? db.hijos.find(x => x.id === asig.hijo_id) : null;
-      const bg = hijo ? 'background:#ADC9F5;' : avail ? '' : 'background:#FDDEDE;';
-      row += `<td style="${tdStyle}${bg}">${hijo ? hijo.nombre.split(' ')[0] : ''}</td>`;
-    });
-    row += '</tr>';
-    rows += row;
-  });
-
-  const html = `
-    <div style="font-family:sans-serif;margin-bottom:16px">
-      <h2 style="font-family:Georgia,serif;color:#1A3835;margin:0 0 4px">Academia Murray Rothbard — Horario</h2>
-      <p style="color:#637875;font-size:13px;margin:0">${subtitulo}</p>
-    </div>
-    <table style="border-collapse:collapse;font-size:12px;font-family:sans-serif">
-      <thead><tr><th style="${thStyle}">Día / Hora</th>${HOURS.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
-  document.getElementById('print-horario').innerHTML = html;
+  document.getElementById('print-subtitulo').textContent = subtitulo;
   window.print();
 }
 
