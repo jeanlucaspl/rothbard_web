@@ -47,10 +47,10 @@
     table.matrix th{background:var(--teal-dark);color:var(--cream);font-size:12px;font-weight:600;padding:9px 6px;text-align:center}
     table.matrix td{border:1px solid var(--border);height:36px;text-align:center;font-size:11px}
     td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream-dark);white-space:nowrap}
-    td.cell-off{background:#f2f2f0}
-    td.cell-on{background:rgba(58,158,117,.15);color:var(--green);cursor:pointer;font-weight:600}
-    td.cell-on:hover{background:rgba(58,158,117,.28)}
-    td.cell-mine{background:rgba(45,90,86,.2);color:var(--teal-dark);font-weight:700;font-size:10px}
+    td.cell-on{background:#FAFAF8;cursor:pointer;border:1px solid var(--border)}
+    td.cell-on:hover{background:#EBF4F3}
+    td.cell-mine{background:#ADC9F5;color:#1A3670;font-weight:700;font-size:10px;border:2px solid #7AAAF0}
+    td.cell-taken{background:#FDDEDE;border:1px solid #F5AEAE;cursor:default}
     .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;align-items:center;flex-wrap:wrap}
     .leg{display:flex;align-items:center;gap:6px}
     .leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
@@ -135,14 +135,14 @@
     </div>
     <div class="card">
       <div class="card-title">Solicitar horario</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Haz clic en una celda <strong style="color:var(--green)">verde</strong> para solicitar ese horario. Se abrirá WhatsApp con el mensaje listo para enviar.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Haz clic en una celda <strong>blanca</strong> para solicitar ese horario. Las celdas en rojo ya están ocupadas por otro alumno.</p>
       <div class="matrix-wrap">
         <table class="matrix" id="matrix-padre"></table>
       </div>
       <div class="legend">
-        <div class="leg"><div class="leg-dot" style="background:#f2f2f0;border:1px solid #ccc"></div> No disponible</div>
-        <div class="leg"><div class="leg-dot" style="background:rgba(58,158,117,.2)"></div> Disponible — clic para solicitar</div>
-        <div class="leg"><div class="leg-dot" style="background:rgba(45,90,86,.25)"></div> Tu horario asignado</div>
+        <div class="leg"><div class="leg-dot" style="background:#FAFAF8;border:1px solid #ccc"></div> Disponible — clic para solicitar</div>
+        <div class="leg"><div class="leg-dot" style="background:#FDDEDE;border:1px solid #F5AEAE"></div> Ocupado por otro alumno</div>
+        <div class="leg"><div class="leg-dot" style="background:#ADC9F5;border:2px solid #7AAAF0"></div> Tu horario asignado</div>
       </div>
     </div>
     <div class="no-print" style="margin-top:4px">
@@ -250,7 +250,6 @@ function renderCurrentSec() {
 // HORARIO
 function renderHorario() {
   const db = getDB();
-  const hd = db.horario_disponible;
   const ha = db.horarios_asignados;
   const misAsig = ha.filter(a => a.activo && a.hijo_id === hijoActivo);
 
@@ -274,14 +273,14 @@ function renderHorario() {
   HOURS.forEach(h => {
     html += `<tr><td class="hour-lbl">${h}</td>`;
     DAYS.forEach(day => {
-      const avail = (hd[day] || []).includes(h);
-      const miAsig = misAsig.find(a => a.dia === day && a.hora === h);
+      const miAsig   = misAsig.find(a => a.dia === day && a.hora === h);
+      const otroAsig = !miAsig && ha.find(a => a.activo && a.dia === day && a.hora === h);
       if (miAsig) {
         html += `<td class="cell-mine">${hijo?.nombre.split(' ')[0] || '✓'}</td>`;
-      } else if (avail) {
-        html += `<td class="cell-on" onclick="solicitarSlot('${day}','${h}')">✓</td>`;
+      } else if (otroAsig) {
+        html += `<td class="cell-taken"></td>`;
       } else {
-        html += `<td class="cell-off"></td>`;
+        html += `<td class="cell-on" onclick="solicitarSlot('${day}','${h}')"></td>`;
       }
     });
     html += '</tr>';
