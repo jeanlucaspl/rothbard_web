@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Academia Murray Rothbard — Acceso</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --teal:#2D5A56;--teal-dark:#1A3835;--teal-light:#4A8078;
+      --cream:#F3EDD8;--cream-dark:#E4D9B4;
+      --text:#1C2B29;--muted:#637875;
+      --white:#FAFAF8;--border:rgba(45,90,86,.15);
+    }
+    body{background:var(--cream);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+    .wrap{width:100%;max-width:400px;text-align:center}
+    .logo{width:140px;height:140px;object-fit:contain;margin:0 auto 24px;filter:drop-shadow(0 4px 16px rgba(45,90,86,.2))}
+    h1{font-family:'Playfair Display',serif;font-size:24px;color:var(--teal-dark);margin-bottom:4px}
+    .lema{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
+    .card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 4px 24px rgba(45,90,86,.08)}
+    label{display:block;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;text-align:left}
+    input{width:100%;padding:14px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-family:'Inter',sans-serif;letter-spacing:.2em;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;text-align:center}
+    input:focus{border-color:var(--teal)}
+    button{width:100%;margin-top:16px;padding:14px;background:var(--teal);color:var(--white);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;letter-spacing:.04em;transition:background .2s}
+    button:hover{background:var(--teal-dark)}
+    .error{margin-top:14px;font-size:13px;color:#C0392B;min-height:20px}
+    .footer{margin-top:24px;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <img src="logo.png" alt="Academia Murray Rothbard" class="logo">
+  <h1>Academia Murray Rothbard</h1>
+  <p class="lema">Libertas Ex Scientia · Tarapoto</p>
+  <div class="card">
+    <label>Ingrese su DNI</label>
+    <input type="number" id="dni" maxlength="8" placeholder="00000000" autofocus>
+    <button onclick="login()">Ingresar</button>
+    <p class="error" id="err"></p>
+  </div>
+  <p class="footer">© 2026 Academia Murray Rothbard</p>
+</div>
+<script>
+  const ADMIN_DNI = '48240305';
+  const DB_KEY = 'rothbard_db';
+  const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+
+  function getDB() {
+    const def = {
+      padres:[], hijos:[], cursos:[],
+      horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]},
+      horarios_asignados:[], clases:[], notas:[]
+    };
+    try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
+    catch { return def; }
+  }
+
+  function login() {
+    const dni = String(document.getElementById('dni').value).trim();
+    if (!dni) return;
+    if (dni === ADMIN_DNI) {
+      sessionStorage.setItem('auth', JSON.stringify({type:'admin'}));
+      location.href = 'admin.html';
+      return;
+    }
+    const db = getDB();
+    const padre = db.padres.find(p => p.dni === dni);
+    if (padre) {
+      sessionStorage.setItem('auth', JSON.stringify({type:'padre', id:padre.id}));
+      location.href = 'padre.html';
+      return;
+    }
+    document.getElementById('err').textContent = 'DNI no encontrado. Consulte con el profesor.';
+  }
+
+  document.getElementById('dni').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+</script>
+</body>
+</html>

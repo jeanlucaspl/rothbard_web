@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — Academia Murray Rothbard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --teal:#2D5A56;--teal-dark:#1A3835;--teal-light:#4A8078;--teal-pale:#EBF4F3;
+      --cream:#F3EDD8;--cream-dark:#E4D9B4;
+      --text:#1C2B29;--muted:#637875;--white:#FAFAF8;--border:rgba(45,90,86,.15);
+      --green:#3A9E75;--red:#C0392B;--yellow:#D4891A;
+      --sidebar:220px;
+    }
+    body{background:var(--cream);color:var(--text);font-family:'Inter',sans-serif;display:flex;min-height:100vh}
+
+    /* SIDEBAR */
+    .sidebar{width:var(--sidebar);background:var(--teal-dark);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+    .sb-logo{padding:24px 16px;text-align:center;border-bottom:1px solid rgba(255,255,255,.08)}
+    .sb-logo img{width:70px;height:70px;object-fit:contain;filter:brightness(1.1)}
+    .sb-logo span{display:block;font-family:'Playfair Display',serif;font-size:13px;color:rgba(243,237,216,.9);margin-top:8px;line-height:1.3}
+    nav{flex:1;padding:16px 0;overflow-y:auto}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:12px 20px;font-size:13px;font-weight:500;color:rgba(243,237,216,.65);cursor:pointer;transition:all .2s;border-left:3px solid transparent;letter-spacing:.02em}
+    .nav-item:hover{color:var(--cream);background:rgba(255,255,255,.05)}
+    .nav-item.active{color:var(--cream);background:rgba(255,255,255,.1);border-left-color:var(--cream-dark)}
+    .nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.8}
+    .sb-footer{padding:16px;border-top:1px solid rgba(255,255,255,.08)}
+    .sb-out{font-size:12px;color:rgba(243,237,216,.45);cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+    .sb-out:hover{color:var(--cream)}
+
+    /* MAIN */
+    .main{margin-left:var(--sidebar);flex:1;display:flex;flex-direction:column;min-height:100vh}
+    .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between}
+    .page-title{font-family:'Playfair Display',serif;font-size:20px;color:var(--teal-dark)}
+    .content{padding:28px;flex:1}
+
+    /* SECTIONS */
+    .section{display:none}
+    .section.active{display:block}
+
+    /* CARDS */
+    .card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px}
+    .card-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--teal-dark);margin-bottom:16px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px}
+    .stat-card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;border-top:3px solid var(--teal)}
+    .stat-num{font-family:'Playfair Display',serif;font-size:36px;color:var(--teal-dark)}
+    .stat-lbl{font-size:12px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+
+    /* FORMS */
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+    .form-row.col3{grid-template-columns:1fr 1fr 1fr}
+    .form-row.col1{grid-template-columns:1fr}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+    .field input,.field select,.field textarea{padding:10px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s}
+    .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--teal)}
+    .field textarea{resize:vertical;min-height:70px}
+
+    /* BUTTONS */
+    .btn{padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;letter-spacing:.02em}
+    .btn-primary{background:var(--teal);color:var(--white)}
+    .btn-primary:hover{background:var(--teal-dark)}
+    .btn-outline{background:transparent;color:var(--teal);border:1.5px solid var(--teal)}
+    .btn-outline:hover{background:var(--teal-pale)}
+    .btn-danger{background:var(--red);color:var(--white)}
+    .btn-danger:hover{opacity:.85}
+    .btn-sm{padding:6px 12px;font-size:12px}
+    .btn-green{background:var(--green);color:var(--white)}
+    .btn-yellow{background:var(--yellow);color:var(--white)}
+
+    /* MATRIX */
+    .matrix-controls{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+    .mode-badge{padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600;letter-spacing:.06em}
+    .mode-disp{background:rgba(58,158,117,.15);color:var(--green)}
+    .mode-asign{background:rgba(45,90,86,.12);color:var(--teal)}
+    .matrix-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
+    table.matrix{border-collapse:collapse;width:100%;min-width:560px;background:var(--white)}
+    table.matrix th{background:var(--teal-dark);color:var(--cream);font-size:12px;font-weight:600;letter-spacing:.08em;padding:10px 6px;text-align:center}
+    table.matrix th:first-child{width:64px}
+    table.matrix td{border:1px solid var(--border);padding:0;height:38px;text-align:center;font-size:11px;transition:all .15s}
+    td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream);white-space:nowrap}
+    td.cell-off{background:#f0f0ee;cursor:pointer}
+    td.cell-off:hover{background:#e4e4e0}
+    td.cell-on{background:rgba(58,158,117,.18);color:var(--green);cursor:pointer;font-weight:600}
+    td.cell-on:hover{background:rgba(58,158,117,.28)}
+    td.cell-taken{background:rgba(45,90,86,.18);color:var(--teal-dark);cursor:pointer;font-weight:600;font-size:10px;padding:2px 4px;line-height:1.2}
+    td.cell-taken:hover{background:rgba(45,90,86,.28)}
+    .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;align-items:center}
+    .leg{display:flex;align-items:center;gap:6px}
+    .leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+    /* TABLE */
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1.5px solid var(--border)}
+    .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle}
+    .tbl tr:last-child td{border-bottom:none}
+    .tbl tr:hover td{background:var(--teal-pale)}
+    .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge-green{background:rgba(58,158,117,.15);color:var(--green)}
+    .badge-teal{background:rgba(45,90,86,.12);color:var(--teal)}
+    .badge-red{background:rgba(192,57,43,.12);color:var(--red)}
+    .badge-yellow{background:rgba(212,137,26,.15);color:var(--yellow)}
+
+    /* MODAL */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
+    .modal-bg.open{display:flex}
+    .modal{background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:440px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal h3{font-family:'Playfair Display',serif;font-size:18px;color:var(--teal-dark);margin-bottom:20px}
+    .modal-btns{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+    /* TABS */
+    .tabs{display:flex;border-bottom:1.5px solid var(--border);margin-bottom:20px;gap:0}
+    .tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1.5px;transition:all .2s}
+    .tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+
+    /* PRINT */
+    @media print{
+      .sidebar,.topbar,.no-print{display:none!important}
+      .main{margin-left:0}
+      .content{padding:0}
+      .print-area{display:block!important}
+    }
+    .print-area{display:none}
+
+    .divider{height:1px;background:var(--border);margin:20px 0}
+    .text-muted{color:var(--muted);font-size:13px}
+    .flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .mt-16{margin-top:16px}
+    .mt-8{margin-top:8px}
+    .empty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
+    .hijo-section{background:var(--teal-pale);border:1px solid rgba(45,90,86,.15);border-radius:8px;padding:14px;margin-bottom:10px}
+    .hijo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+    .hijo-nombre{font-weight:600;color:var(--teal-dark);font-size:14px}
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sb-logo">
+    <img src="logo.png" alt="Logo">
+    <span>Academia Murray<br>Rothbard</span>
+  </div>
+  <nav>
+    <div class="nav-item active" onclick="showSection('panel',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Panel
+    </div>
+    <div class="nav-item" onclick="showSection('horario',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Horario
+    </div>
+    <div class="nav-item" onclick="showSection('alumnos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      Alumnos
+    </div>
+    <div class="nav-item" onclick="showSection('clases',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+      Clases
+    </div>
+    <div class="nav-item" onclick="showSection('notas',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      Notas
+    </div>
+    <div class="nav-item" onclick="showSection('datos',this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Datos
+    </div>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-out" onclick="logout()">← Cerrar sesión</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <span class="page-title" id="page-title">Panel</span>
+    <span style="font-size:12px;color:var(--muted)">Admin · Academia Murray Rothbard</span>
+  </div>
+  <div class="content">
+
+    <!-- PANEL -->
+    <div class="section active" id="sec-panel">
+      <div class="grid-3" id="stats-panel"></div>
+      <div class="card">
+        <div class="card-title">Próximas clases programadas esta semana</div>
+        <div id="proximas-clases"></div>
+      </div>
+    </div>
+
+    <!-- HORARIO -->
+    <div class="section" id="sec-horario">
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Disponibilidad semanal</div>
+        <div class="matrix-controls">
+          <button class="btn btn-outline btn-sm" id="btn-mode" onclick="toggleMode()">Modo: Editar disponibilidad</button>
+          <span class="mode-badge mode-disp" id="mode-badge">● Editando disponibilidad</span>
+        </div>
+        <div class="matrix-wrap">
+          <table class="matrix" id="matrix-table"></table>
+        </div>
+        <div class="legend">
+          <div class="leg"><div class="leg-dot" style="background:#f0f0ee;border:1px solid #ccc"></div> No disponible</div>
+          <div class="leg"><div class="leg-dot" style="background:rgba(58,158,117,.25)"></div> Disponible</div>
+          <div class="leg"><div class="leg-dot" style="background:rgba(45,90,86,.25)"></div> Asignado</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Horarios asignados</div>
+        <div id="asignados-list"></div>
+        <button class="btn btn-outline btn-sm mt-16 no-print" onclick="printHorario()">🖨 Imprimir horario</button>
+      </div>
+      <!-- Zona imprimible -->
+      <div class="print-area" id="print-horario"></div>
+    </div>
+
+    <!-- ALUMNOS -->
+    <div class="section" id="sec-alumnos">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start">
+        <div class="card">
+          <div class="card-title">Nuevo padre / apoderado</div>
+          <div class="form-row">
+            <div class="field"><label>Nombre completo</label><input id="p-nombre" type="text" placeholder="María García"></div>
+            <div class="field"><label>DNI</label><input id="p-dni" type="text" maxlength="8" placeholder="12345678"></div>
+          </div>
+          <div class="form-row col1">
+            <div class="field"><label>Teléfono</label><input id="p-tel" type="text" placeholder="987654321"></div>
+          </div>
+          <button class="btn btn-primary" onclick="crearPadre()">Agregar padre</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Padres registrados</div>
+          <div id="padres-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLASES -->
+    <div class="section" id="sec-clases">
+      <div style="display:grid;grid-template-columns:360px 1fr;gap:20px;align-items:start">
+        <div class="card">
+          <div class="card-title">Registrar clase</div>
+          <div class="form-row col1">
+            <div class="field"><label>Alumno</label>
+              <select id="cl-hijo"><option value="">Seleccionar alumno</option></select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Fecha</label><input id="cl-fecha" type="date"></div>
+            <div class="field"><label>Hora</label>
+              <select id="cl-hora">
+                <option value="">-- hora --</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row col1">
+            <div class="field"><label>¿Clase dictada?</label>
+              <select id="cl-dictada">
+                <option value="1">Sí, se dictó</option>
+                <option value="0">No se dictó</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row col1">
+            <div class="field"><label>Temas tratados</label><textarea id="cl-temas" placeholder="Ej: Fracciones, suma y resta..."></textarea></div>
+          </div>
+          <div class="form-row col1">
+            <div class="field"><label>Tarea asignada</label><textarea id="cl-tarea" placeholder="Ej: Ejercicios página 45..."></textarea></div>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>¿Hubo examen?</label>
+              <select id="cl-examen"><option value="0">No</option><option value="1">Sí</option></select>
+            </div>
+            <div class="field"><label>Resultado examen</label><input id="cl-resultado" type="text" placeholder="Ej: 16/20"></div>
+          </div>
+          <div class="form-row col1">
+            <div class="field"><label>Observaciones</label><textarea id="cl-obs" placeholder="Análisis de rendimiento, situación académica..."></textarea></div>
+          </div>
+          <button class="btn btn-primary" onclick="registrarClase()">Guardar clase</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Historial de clases</div>
+          <div class="field" style="margin-bottom:12px">
+            <label>Filtrar por alumno</label>
+            <select id="cl-filtro" onchange="renderClases()">
+              <option value="">Todos</option>
+            </select>
+          </div>
+          <div id="clases-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTAS -->
+    <div class="section" id="sec-notas">
+      <div style="display:grid;grid-template-columns:300px 1fr;gap:20px;align-items:start">
+        <div>
+          <div class="card" style="margin-bottom:16px">
+            <div class="card-title">Cursos</div>
+            <div class="form-row col1">
+              <div class="field"><label>Nombre del curso</label><input id="curso-nombre" type="text" placeholder="Ej: Matemáticas"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="crearCurso()">Agregar curso</button>
+            <div class="divider"></div>
+            <div id="cursos-list"></div>
+          </div>
+          <div class="card">
+            <div class="card-title">Asignar nota</div>
+            <div class="form-row col1">
+              <div class="field"><label>Alumno</label>
+                <select id="n-hijo"><option value="">Seleccionar</option></select>
+              </div>
+            </div>
+            <div class="form-row col1">
+              <div class="field"><label>Curso</label>
+                <select id="n-curso"><option value="">Seleccionar</option></select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field"><label>Nota</label><input id="n-valor" type="number" min="0" max="20" placeholder="0-20"></div>
+              <div class="field"><label>Período</label><input id="n-periodo" type="text" placeholder="Ej: Junio 2026"></div>
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="asignarNota()">Guardar nota</button>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Notas por alumno</div>
+          <div class="field" style="margin-bottom:16px">
+            <label>Filtrar alumno</label>
+            <select id="n-filtro" onchange="renderNotas()"><option value="">Todos</option></select>
+          </div>
+          <div id="notas-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DATOS -->
+    <div class="section" id="sec-datos">
+      <div style="max-width:480px">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Exportar datos</div>
+          <p class="text-muted" style="margin-bottom:16px">Descarga una copia de seguridad de todos los datos en formato JSON.</p>
+          <button class="btn btn-primary" onclick="exportarDB()">⬇ Descargar backup JSON</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Importar datos</div>
+          <p class="text-muted" style="margin-bottom:16px">Restaura datos desde un archivo JSON previamente exportado. <strong>Reemplaza todos los datos actuales.</strong></p>
+          <input type="file" id="import-file" accept=".json" style="margin-bottom:12px">
+          <button class="btn btn-danger" onclick="importarDB()">⬆ Importar y reemplazar</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- MODAL ASIGNAR HORARIO -->
+<div class="modal-bg" id="modal-asignar">
+  <div class="modal">
+    <h3>Asignar horario</h3>
+    <p class="text-muted" style="margin-bottom:16px" id="modal-slot-info"></p>
+    <div class="field">
+      <label>Alumno</label>
+      <select id="modal-hijo-sel"><option value="">Seleccionar alumno</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('modal-asignar')">Cancelar</button>
+      <button class="btn btn-primary" onclick="confirmarAsignacion()">Asignar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL AGREGAR HIJO -->
+<div class="modal-bg" id="modal-hijo">
+  <div class="modal">
+    <h3 id="modal-hijo-title">Agregar hijo</h3>
+    <input type="hidden" id="modal-padre-id">
+    <div class="form-row col1">
+      <div class="field"><label>Nombre del alumno</label><input id="h-nombre" type="text" placeholder="Juan García"></div>
+    </div>
+    <div class="form-row col1">
+      <div class="field"><label>Grado / Nivel</label><input id="h-grado" type="text" placeholder="Ej: 3ro de primaria"></div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('modal-hijo')">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarHijo()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VER/QUITAR ASIGNACIÓN -->
+<div class="modal-bg" id="modal-ver-asig">
+  <div class="modal">
+    <h3>Horario asignado</h3>
+    <p class="text-muted" id="modal-ver-info" style="margin-bottom:16px"></p>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal('modal-ver-asig')">Cerrar</button>
+      <button class="btn btn-danger" id="btn-quitar-asig" onclick="quitarAsignacion()">Quitar asignación</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── DB ──────────────────────────────────────────────────────────────────
+const DB_KEY = 'rothbard_db';
+const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+const WA = '+51994240515';
+
+function getDB() {
+  const def = {
+    padres:[], hijos:[], cursos:[],
+    horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]},
+    horarios_asignados:[], clases:[], notas:[]
+  };
+  try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
+  catch { return def; }
+}
+function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+// ── AUTH ─────────────────────────────────────────────────────────────────
+const auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+if (!auth || auth.type !== 'admin') location.href = 'index.html';
+
+function logout() { sessionStorage.clear(); location.href = 'index.html'; }
+
+// ── NAV ──────────────────────────────────────────────────────────────────
+const TITLES = {panel:'Panel', horario:'Horario', alumnos:'Alumnos', clases:'Clases', notas:'Notas', datos:'Datos'};
+let currentSection = 'panel';
+
+function showSection(id, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('sec-' + id).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('page-title').textContent = TITLES[id];
+  currentSection = id;
+  if (id === 'panel') renderPanel();
+  if (id === 'horario') { renderMatrix(); renderAsignados(); }
+  if (id === 'alumnos') renderAlumnos();
+  if (id === 'clases') { populateHijoSelects(); renderClases(); }
+  if (id === 'notas') { populateCursoSelects(); renderNotas(); }
+}
+
+// ── PANEL ─────────────────────────────────────────────────────────────────
+function renderPanel() {
+  const db = getDB();
+  const totalHijos = db.hijos.length;
+  const totalClases = db.clases.filter(c => c.dictada).length;
+  const totalPadres = db.padres.length;
+  document.getElementById('stats-panel').innerHTML = `
+    <div class="stat-card"><div class="stat-num">${totalPadres}</div><div class="stat-lbl">Familias registradas</div></div>
+    <div class="stat-card"><div class="stat-num">${totalHijos}</div><div class="stat-lbl">Alumnos activos</div></div>
+    <div class="stat-card"><div class="stat-num">${totalClases}</div><div class="stat-lbl">Clases dictadas</div></div>
+  `;
+  // Próximas clases: horarios asignados para hoy y mañana
+  const hoy = new Date();
+  const diasSem = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const diaHoy = diasSem[hoy.getDay()];
+  const asigHoy = db.horarios_asignados.filter(a => a.dia === diaHoy && a.activo);
+  const html = asigHoy.length ? asigHoy.map(a => {
+    const h = db.hijos.find(x => x.id === a.hijo_id);
+    return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+      <span class="badge badge-teal">${a.hora}</span>
+      <span>${h ? h.nombre : '—'}</span>
+      <span class="text-muted">${diaHoy}</span>
+    </div>`;
+  }).join('') : '<div class="empty">No hay clases programadas para hoy</div>';
+  document.getElementById('proximas-clases').innerHTML = html;
+}
+
+// ── MATRIX ───────────────────────────────────────────────────────────────
+let matrixMode = 'disponibilidad'; // 'disponibilidad' | 'asignacion'
+let pendingSlot = null;
+
+function toggleMode() {
+  matrixMode = matrixMode === 'disponibilidad' ? 'asignacion' : 'disponibilidad';
+  document.getElementById('btn-mode').textContent = matrixMode === 'disponibilidad' ? 'Modo: Editar disponibilidad' : 'Modo: Asignar alumnos';
+  const badge = document.getElementById('mode-badge');
+  if (matrixMode === 'disponibilidad') {
+    badge.className = 'mode-badge mode-disp'; badge.textContent = '● Editando disponibilidad';
+  } else {
+    badge.className = 'mode-badge mode-asign'; badge.textContent = '● Asignando alumnos';
+  }
+  renderMatrix();
+}
+
+function renderMatrix() {
+  const db = getDB();
+  const hd = db.horario_disponible;
+  const ha = db.horarios_asignados;
+  let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+  HOURS.forEach(h => {
+    html += `<tr><td class="hour-lbl">${h}</td>`;
+    DAYS.forEach(day => {
+      const avail = (hd[day] || []).includes(h);
+      const asig = ha.find(a => a.dia === day && a.hora === h && a.activo);
+      if (asig) {
+        const hijo = db.hijos.find(x => x.id === asig.hijo_id);
+        html += `<td class="cell-taken" data-day="${day}" data-hour="${h}" data-asig="${asig.id}" onclick="cellClick(this)">${hijo ? hijo.nombre.split(' ')[0] : '?'}</td>`;
+      } else if (avail) {
+        html += `<td class="cell-on" data-day="${day}" data-hour="${h}" onclick="cellClick(this)">✓</td>`;
+      } else {
+        html += `<td class="cell-off" data-day="${day}" data-hour="${h}" onclick="cellClick(this)"></td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('matrix-table').innerHTML = html;
+}
+
+function cellClick(td) {
+  const day = td.dataset.day, hour = td.dataset.hour;
+  const db = getDB();
+  if (matrixMode === 'disponibilidad') {
+    const hd = db.horario_disponible;
+    if (!hd[day]) hd[day] = [];
+    const idx = hd[day].indexOf(hour);
+    if (idx >= 0) hd[day].splice(idx, 1);
+    else hd[day].push(hour);
+    saveDB(db);
+    renderMatrix();
+  } else {
+    // asignacion mode
+    if (td.dataset.asig) {
+      // ver asignación existente
+      const asig = db.horarios_asignados.find(a => a.id === td.dataset.asig);
+      const hijo = db.hijos.find(h => h.id === asig.hijo_id);
+      document.getElementById('modal-ver-info').textContent = `${hijo?.nombre || '—'} — ${day} ${hour}`;
+      document.getElementById('btn-quitar-asig').dataset.asigId = asig.id;
+      openModal('modal-ver-asig');
+    } else if (td.classList.contains('cell-on')) {
+      // asignar alumno a esta celda disponible
+      pendingSlot = { day, hour };
+      document.getElementById('modal-slot-info').textContent = `${day} a las ${hour}`;
+      const sel = document.getElementById('modal-hijo-sel');
+      sel.innerHTML = '<option value="">Seleccionar alumno</option>' +
+        db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+      openModal('modal-asignar');
+    }
+  }
+}
+
+function confirmarAsignacion() {
+  const hijoId = document.getElementById('modal-hijo-sel').value;
+  if (!hijoId || !pendingSlot) return alert('Selecciona un alumno');
+  const db = getDB();
+  // quitar asignación previa del mismo slot si existe
+  db.horarios_asignados = db.horarios_asignados.filter(a => !(a.dia === pendingSlot.day && a.hora === pendingSlot.hour));
+  db.horarios_asignados.push({ id: uid(), hijo_id: hijoId, dia: pendingSlot.day, hora: pendingSlot.hour, activo: true, fecha_inicio: new Date().toISOString().slice(0,10) });
+  saveDB(db);
+  closeModal('modal-asignar');
+  renderMatrix();
+  renderAsignados();
+}
+
+function quitarAsignacion() {
+  const id = document.getElementById('btn-quitar-asig').dataset.asigId;
+  const db = getDB();
+  db.horarios_asignados = db.horarios_asignados.filter(a => a.id !== id);
+  saveDB(db);
+  closeModal('modal-ver-asig');
+  renderMatrix();
+  renderAsignados();
+}
+
+function renderAsignados() {
+  const db = getDB();
+  const activos = db.horarios_asignados.filter(a => a.activo);
+  if (!activos.length) {
+    document.getElementById('asignados-list').innerHTML = '<div class="empty">Sin horarios asignados aún</div>';
+    return;
+  }
+  const ordenados = [...activos].sort((a,b) => DAYS.indexOf(a.dia) - DAYS.indexOf(b.dia) || a.hora.localeCompare(b.hora));
+  document.getElementById('asignados-list').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Día</th><th>Hora</th><th>Alumno</th><th>Desde</th></tr></thead>
+      <tbody>${ordenados.map(a => {
+        const h = db.hijos.find(x => x.id === a.hijo_id);
+        return `<tr><td>${a.dia}</td><td><span class="badge badge-teal">${a.hora}</span></td><td>${h?.nombre || '—'}</td><td>${a.fecha_inicio || '—'}</td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+function printHorario() {
+  const db = getDB();
+  const activos = db.horarios_asignados.filter(a => a.activo);
+  let rows = '';
+  HOURS.forEach(h => {
+    let row = `<tr><td style="font-weight:600;padding:6px 10px;background:#f5f5f3;white-space:nowrap">${h}</td>`;
+    DAYS.forEach(day => {
+      const asig = activos.find(a => a.dia === day && a.hora === h);
+      const hijo = asig ? db.hijos.find(x => x.id === asig.hijo_id) : null;
+      row += `<td style="padding:6px 10px;text-align:center;border:1px solid #ddd">${hijo ? hijo.nombre : ''}</td>`;
+    });
+    row += '</tr>';
+    rows += row;
+  });
+  const html = `<h2 style="font-family:serif;margin-bottom:12px;color:#1A3835">Academia Murray Rothbard — Horario</h2>
+    <table style="border-collapse:collapse;width:100%;font-size:13px;font-family:sans-serif">
+      <thead><tr><th style="padding:8px 10px;background:#1A3835;color:#F3EDD8"></th>${DAYS.map(d=>`<th style="padding:8px 10px;background:#1A3835;color:#F3EDD8">${d}</th>`).join('')}</tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  document.getElementById('print-horario').innerHTML = html;
+  window.print();
+}
+
+// ── ALUMNOS ───────────────────────────────────────────────────────────────
+function crearPadre() {
+  const nombre = document.getElementById('p-nombre').value.trim();
+  const dni = document.getElementById('p-dni').value.trim();
+  const tel = document.getElementById('p-tel').value.trim();
+  if (!nombre || !dni) return alert('Nombre y DNI son obligatorios');
+  const db = getDB();
+  if (db.padres.find(p => p.dni === dni)) return alert('Ya existe un padre con ese DNI');
+  db.padres.push({ id: uid(), nombre, dni, telefono: tel, hijos: [] });
+  saveDB(db);
+  document.getElementById('p-nombre').value = '';
+  document.getElementById('p-dni').value = '';
+  document.getElementById('p-tel').value = '';
+  renderAlumnos();
+}
+
+function renderAlumnos() {
+  const db = getDB();
+  if (!db.padres.length) {
+    document.getElementById('padres-list').innerHTML = '<div class="empty">Sin padres registrados</div>';
+    return;
+  }
+  document.getElementById('padres-list').innerHTML = db.padres.map(p => {
+    const hijos = db.hijos.filter(h => h.padre_id === p.id);
+    return `<div class="hijo-section">
+      <div class="hijo-header">
+        <div>
+          <div class="hijo-nombre">${p.nombre}</div>
+          <div style="font-size:12px;color:var(--muted)">DNI: ${p.dni} · Tel: ${p.telefono || '—'}</div>
+        </div>
+        <div class="flex">
+          <button class="btn btn-outline btn-sm" onclick="abrirModalHijo('${p.id}')">+ Hijo</button>
+          <button class="btn btn-danger btn-sm" onclick="eliminarPadre('${p.id}')">✕</button>
+        </div>
+      </div>
+      ${hijos.length ? hijos.map(h => `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--white);border-radius:6px;margin-bottom:6px">
+          <div>
+            <span style="font-weight:500">${h.nombre}</span>
+            <span style="font-size:12px;color:var(--muted);margin-left:8px">${h.grado || ''}</span>
+          </div>
+          <button class="btn btn-danger btn-sm" onclick="eliminarHijo('${h.id}')">✕</button>
+        </div>`).join('') : '<div style="font-size:12px;color:var(--muted);padding:4px 0">Sin hijos asignados</div>'}
+    </div>`;
+  }).join('');
+}
+
+function abrirModalHijo(padreId) {
+  document.getElementById('modal-padre-id').value = padreId;
+  document.getElementById('h-nombre').value = '';
+  document.getElementById('h-grado').value = '';
+  openModal('modal-hijo');
+}
+
+function guardarHijo() {
+  const padreId = document.getElementById('modal-padre-id').value;
+  const nombre = document.getElementById('h-nombre').value.trim();
+  const grado = document.getElementById('h-grado').value.trim();
+  if (!nombre) return alert('Ingresa el nombre del alumno');
+  const db = getDB();
+  db.hijos.push({ id: uid(), nombre, grado, padre_id: padreId });
+  saveDB(db);
+  closeModal('modal-hijo');
+  renderAlumnos();
+}
+
+function eliminarPadre(id) {
+  if (!confirm('¿Eliminar este padre y todos sus hijos?')) return;
+  const db = getDB();
+  const hijos = db.hijos.filter(h => h.padre_id === id).map(h => h.id);
+  db.padres = db.padres.filter(p => p.id !== id);
+  db.hijos = db.hijos.filter(h => h.padre_id !== id);
+  db.horarios_asignados = db.horarios_asignados.filter(a => !hijos.includes(a.hijo_id));
+  saveDB(db);
+  renderAlumnos();
+}
+
+function eliminarHijo(id) {
+  if (!confirm('¿Eliminar este alumno?')) return;
+  const db = getDB();
+  db.hijos = db.hijos.filter(h => h.id !== id);
+  db.horarios_asignados = db.horarios_asignados.filter(a => a.hijo_id !== id);
+  saveDB(db);
+  renderAlumnos();
+}
+
+// ── CLASES ────────────────────────────────────────────────────────────────
+function populateHijoSelects() {
+  const db = getDB();
+  const opts = '<option value="">Seleccionar</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  document.getElementById('cl-hijo').innerHTML = opts;
+  document.getElementById('cl-filtro').innerHTML = '<option value="">Todos</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  // horas
+  document.getElementById('cl-hora').innerHTML = '<option value="">-- hora --</option>' + HOURS.map(h => `<option value="${h}">${h}</option>`).join('');
+  // fecha hoy
+  document.getElementById('cl-fecha').value = new Date().toISOString().slice(0,10);
+}
+
+function registrarClase() {
+  const hijoId = document.getElementById('cl-hijo').value;
+  const fecha = document.getElementById('cl-fecha').value;
+  const hora = document.getElementById('cl-hora').value;
+  if (!hijoId || !fecha || !hora) return alert('Completa alumno, fecha y hora');
+  const db = getDB();
+  db.clases.push({
+    id: uid(),
+    hijo_id: hijoId,
+    fecha, hora,
+    dictada: document.getElementById('cl-dictada').value === '1',
+    temas: document.getElementById('cl-temas').value.trim(),
+    tarea: document.getElementById('cl-tarea').value.trim(),
+    tarea_entregada: false,
+    hubo_examen: document.getElementById('cl-examen').value === '1',
+    resultado_examen: document.getElementById('cl-resultado').value.trim(),
+    observaciones: document.getElementById('cl-obs').value.trim()
+  });
+  saveDB(db);
+  // limpiar
+  ['cl-temas','cl-tarea','cl-resultado','cl-obs'].forEach(id => document.getElementById(id).value = '');
+  renderClases();
+}
+
+function renderClases() {
+  const db = getDB();
+  const filtro = document.getElementById('cl-filtro')?.value || '';
+  let clases = [...db.clases].sort((a,b) => b.fecha.localeCompare(a.fecha));
+  if (filtro) clases = clases.filter(c => c.hijo_id === filtro);
+  if (!clases.length) { document.getElementById('clases-list').innerHTML = '<div class="empty">Sin clases registradas</div>'; return; }
+  document.getElementById('clases-list').innerHTML = clases.map(c => {
+    const h = db.hijos.find(x => x.id === c.hijo_id);
+    return `<div class="card" style="margin-bottom:10px;padding:14px">
+      <div class="flex" style="margin-bottom:8px">
+        <span class="badge ${c.dictada ? 'badge-green' : 'badge-red'}">${c.dictada ? '✓ Dictada' : '✗ No dictada'}</span>
+        <span class="badge badge-teal">${c.fecha} ${c.hora}</span>
+        <strong style="font-size:13px">${h?.nombre || '—'}</strong>
+        <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="eliminarClase('${c.id}')">✕</button>
+      </div>
+      ${c.temas ? `<div style="font-size:13px;margin-bottom:4px"><strong>Temas:</strong> ${c.temas}</div>` : ''}
+      ${c.tarea ? `<div style="font-size:13px;margin-bottom:4px"><strong>Tarea:</strong> ${c.tarea}</div>` : ''}
+      ${c.hubo_examen ? `<div style="font-size:13px;margin-bottom:4px"><strong>Examen:</strong> ${c.resultado_examen || 'Sin resultado'}</div>` : ''}
+      ${c.observaciones ? `<div style="font-size:13px;color:var(--muted)">${c.observaciones}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function eliminarClase(id) {
+  if (!confirm('¿Eliminar este registro de clase?')) return;
+  const db = getDB();
+  db.clases = db.clases.filter(c => c.id !== id);
+  saveDB(db);
+  renderClases();
+}
+
+// ── NOTAS ─────────────────────────────────────────────────────────────────
+function populateCursoSelects() {
+  const db = getDB();
+  const hijoOpts = '<option value="">Seleccionar</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  const cursoOpts = '<option value="">Seleccionar</option>' + db.cursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('n-hijo').innerHTML = hijoOpts;
+  document.getElementById('n-curso').innerHTML = cursoOpts;
+  document.getElementById('n-filtro').innerHTML = '<option value="">Todos</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  renderCursos();
+}
+
+function crearCurso() {
+  const nombre = document.getElementById('curso-nombre').value.trim();
+  if (!nombre) return;
+  const db = getDB();
+  if (db.cursos.find(c => c.nombre.toLowerCase() === nombre.toLowerCase())) return alert('Curso ya existe');
+  db.cursos.push({ id: uid(), nombre });
+  saveDB(db);
+  document.getElementById('curso-nombre').value = '';
+  populateCursoSelects();
+}
+
+function renderCursos() {
+  const db = getDB();
+  document.getElementById('cursos-list').innerHTML = !db.cursos.length ? '<div class="empty">Sin cursos</div>' :
+    db.cursos.map(c => `<div class="flex" style="margin-bottom:6px">
+      <span style="flex:1;font-size:13px">${c.nombre}</span>
+      <button class="btn btn-danger btn-sm" onclick="eliminarCurso('${c.id}')">✕</button>
+    </div>`).join('');
+}
+
+function eliminarCurso(id) {
+  if (!confirm('¿Eliminar curso?')) return;
+  const db = getDB();
+  db.cursos = db.cursos.filter(c => c.id !== id);
+  db.notas = db.notas.filter(n => n.curso_id !== id);
+  saveDB(db);
+  populateCursoSelects();
+}
+
+function asignarNota() {
+  const hijoId = document.getElementById('n-hijo').value;
+  const cursoId = document.getElementById('n-curso').value;
+  const valor = parseFloat(document.getElementById('n-valor').value);
+  const periodo = document.getElementById('n-periodo').value.trim();
+  if (!hijoId || !cursoId || isNaN(valor)) return alert('Completa todos los campos');
+  const db = getDB();
+  db.notas.push({ id: uid(), hijo_id: hijoId, curso_id: cursoId, valor, periodo, fecha: new Date().toISOString().slice(0,10) });
+  saveDB(db);
+  document.getElementById('n-valor').value = '';
+  renderNotas();
+}
+
+function renderNotas() {
+  const db = getDB();
+  const filtro = document.getElementById('n-filtro')?.value || '';
+  let notas = [...db.notas].sort((a,b) => b.fecha.localeCompare(a.fecha));
+  if (filtro) notas = notas.filter(n => n.hijo_id === filtro);
+  if (!notas.length) { document.getElementById('notas-list').innerHTML = '<div class="empty">Sin notas registradas</div>'; return; }
+  document.getElementById('notas-list').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Alumno</th><th>Curso</th><th>Nota</th><th>Período</th><th></th></tr></thead>
+      <tbody>${notas.map(n => {
+        const h = db.hijos.find(x => x.id === n.hijo_id);
+        const c = db.cursos.find(x => x.id === n.curso_id);
+        const color = n.valor >= 14 ? 'badge-green' : n.valor >= 11 ? 'badge-yellow' : 'badge-red';
+        return `<tr><td>${h?.nombre || '—'}</td><td>${c?.nombre || '—'}</td>
+          <td><span class="badge ${color}">${n.valor}/20</span></td>
+          <td>${n.periodo || '—'}</td>
+          <td><button class="btn btn-danger btn-sm" onclick="eliminarNota('${n.id}')">✕</button></td></tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+function eliminarNota(id) {
+  if (!confirm('¿Eliminar nota?')) return;
+  const db = getDB();
+  db.notas = db.notas.filter(n => n.id !== id);
+  saveDB(db);
+  renderNotas();
+}
+
+// ── DATOS ─────────────────────────────────────────────────────────────────
+function exportarDB() {
+  const data = localStorage.getItem(DB_KEY) || '{}';
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `rothbard_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function importarDB() {
+  const file = document.getElementById('import-file').files[0];
+  if (!file) return alert('Selecciona un archivo JSON');
+  if (!confirm('¿Reemplazar TODOS los datos actuales con el archivo seleccionado?')) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      JSON.parse(e.target.result);
+      localStorage.setItem(DB_KEY, e.target.result);
+      alert('Datos importados correctamente');
+      location.reload();
+    } catch { alert('Archivo JSON inválido'); }
+  };
+  reader.readAsText(file);
+}
+
+// ── MODALS ────────────────────────────────────────────────────────────────
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+document.querySelectorAll('.modal-bg').forEach(m => {
+  m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); });
+});
+
+// ── INIT ──────────────────────────────────────────────────────────────────
+renderPanel();
+</script>
+</body>
+</html>

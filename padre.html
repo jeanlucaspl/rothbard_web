@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal de Padres — Academia Murray Rothbard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    :root{
+      --teal:#2D5A56;--teal-dark:#1A3835;--teal-light:#4A8078;--teal-pale:#EBF4F3;
+      --cream:#F3EDD8;--cream-dark:#E4D9B4;
+      --text:#1C2B29;--muted:#637875;--white:#FAFAF8;--border:rgba(45,90,86,.15);
+      --green:#3A9E75;--red:#C0392B;--yellow:#D4891A;
+    }
+    body{background:var(--cream);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh}
+
+    /* HEADER */
+    header{background:var(--teal-dark);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100}
+    .hd-brand{display:flex;align-items:center;gap:12px}
+    .hd-brand img{width:38px;height:38px;object-fit:contain}
+    .hd-brand span{font-family:'Playfair Display',serif;font-size:15px;color:var(--cream)}
+    .hd-right{display:flex;align-items:center;gap:16px}
+    .hd-padre{font-size:12px;color:rgba(243,237,216,.7)}
+    .hd-out{font-size:12px;color:rgba(243,237,216,.5);cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+    .hd-out:hover{color:var(--cream)}
+
+    /* HIJO TABS */
+    .hijo-bar{background:var(--white);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0;overflow-x:auto}
+    .hijo-tab{padding:12px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+    .hijo-tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+
+    /* NAV SECTIONS */
+    .sec-bar{background:var(--teal-pale);border-bottom:1px solid var(--border);padding:0 24px;display:flex;gap:0}
+    .sec-tab{padding:10px 16px;font-size:12px;font-weight:600;color:var(--muted);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;border-bottom:2px solid transparent;transition:all .2s}
+    .sec-tab.on{color:var(--teal-dark);border-bottom-color:var(--teal-dark)}
+
+    .content{max-width:900px;margin:0 auto;padding:24px}
+
+    /* CARDS */
+    .card{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:16px}
+    .card-title{font-family:'Playfair Display',serif;font-size:16px;color:var(--teal-dark);margin-bottom:14px}
+
+    /* MATRIX */
+    .matrix-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--border)}
+    table.matrix{border-collapse:collapse;width:100%;min-width:560px;background:var(--white)}
+    table.matrix th{background:var(--teal-dark);color:var(--cream);font-size:12px;font-weight:600;padding:9px 6px;text-align:center}
+    table.matrix td{border:1px solid var(--border);height:36px;text-align:center;font-size:11px}
+    td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream-dark);white-space:nowrap}
+    td.cell-off{background:#f2f2f0}
+    td.cell-on{background:rgba(58,158,117,.15);color:var(--green);cursor:pointer;font-weight:600}
+    td.cell-on:hover{background:rgba(58,158,117,.28)}
+    td.cell-mine{background:rgba(45,90,86,.2);color:var(--teal-dark);font-weight:700;font-size:10px}
+    .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;align-items:center;flex-wrap:wrap}
+    .leg{display:flex;align-items:center;gap:6px}
+    .leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+    /* BUTTONS */
+    .btn{padding:9px 18px;border:none;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s}
+    .btn-wa{background:#25D366;color:#fff;display:inline-flex;align-items:center;gap:8px}
+    .btn-wa:hover{background:#1dbb5a}
+    .btn-outline{background:transparent;color:var(--teal);border:1.5px solid var(--teal)}
+    .btn-outline:hover{background:var(--teal-pale)}
+
+    /* TABLES */
+    .tbl{width:100%;border-collapse:collapse;font-size:13px}
+    .tbl th{text-align:left;padding:10px 12px;font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;border-bottom:1.5px solid var(--border)}
+    .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+    .tbl tr:last-child td{border-bottom:none}
+    .badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600}
+    .badge-green{background:rgba(58,158,117,.15);color:var(--green)}
+    .badge-teal{background:rgba(45,90,86,.12);color:var(--teal)}
+    .badge-red{background:rgba(192,57,43,.12);color:var(--red)}
+    .badge-yellow{background:rgba(212,137,26,.15);color:var(--yellow)}
+
+    /* MODAL */
+    .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;align-items:center;justify-content:center;padding:16px}
+    .modal-bg.open{display:flex}
+    .modal{background:var(--white);border-radius:12px;padding:28px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal h3{font-family:'Playfair Display',serif;font-size:18px;color:var(--teal-dark);margin-bottom:12px}
+    .modal-btns{display:flex;gap:10px;margin-top:20px;justify-content:flex-end}
+
+    .field{display:flex;flex-direction:column;gap:5px;margin-bottom:12px}
+    .field label{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+    .field select{padding:10px 12px;border:1.5px solid var(--border);border-radius:7px;font-family:'Inter',sans-serif;font-size:14px;color:var(--text);background:var(--cream);outline:none}
+
+    .empty{text-align:center;padding:32px;color:var(--muted);font-size:14px}
+    .stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}
+    .stat-mini{background:var(--teal-pale);border-radius:8px;padding:14px;text-align:center}
+    .stat-mini .num{font-family:'Playfair Display',serif;font-size:28px;color:var(--teal-dark)}
+    .stat-mini .lbl{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+    .clase-card{border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;background:var(--cream)}
+    .clase-card-header{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+
+    @media print{
+      header,.hijo-bar,.sec-bar,.no-print{display:none!important}
+      body{background:white}
+      .card{box-shadow:none;border:1px solid #ddd}
+    }
+    @media(max-width:600px){
+      .stat-row{grid-template-columns:1fr 1fr}
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="hd-brand">
+    <img src="logo.png" alt="Logo">
+    <span>Academia Murray Rothbard</span>
+  </div>
+  <div class="hd-right">
+    <span class="hd-padre" id="hd-nombre"></span>
+    <span class="hd-out" onclick="logout()">Salir</span>
+  </div>
+</header>
+
+<!-- HIJO TABS -->
+<div class="hijo-bar" id="hijo-bar"></div>
+
+<!-- SECTION TABS -->
+<div class="sec-bar">
+  <div class="sec-tab on" onclick="showSec('horario',this)">Horario</div>
+  <div class="sec-tab" onclick="showSec('clases',this)">Clases</div>
+  <div class="sec-tab" onclick="showSec('notas',this)">Notas</div>
+</div>
+
+<div class="content">
+
+  <!-- HORARIO -->
+  <div class="sec active" id="sec-horario">
+    <div class="card">
+      <div class="card-title">Mi horario asignado</div>
+      <div id="mi-horario"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Solicitar horario</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Haz clic en una celda <strong style="color:var(--green)">verde</strong> para solicitar ese horario. Se abrirá WhatsApp con el mensaje listo para enviar.</p>
+      <div class="matrix-wrap">
+        <table class="matrix" id="matrix-padre"></table>
+      </div>
+      <div class="legend">
+        <div class="leg"><div class="leg-dot" style="background:#f2f2f0;border:1px solid #ccc"></div> No disponible</div>
+        <div class="leg"><div class="leg-dot" style="background:rgba(58,158,117,.2)"></div> Disponible — clic para solicitar</div>
+        <div class="leg"><div class="leg-dot" style="background:rgba(45,90,86,.25)"></div> Tu horario asignado</div>
+      </div>
+    </div>
+    <div class="no-print" style="margin-top:4px">
+      <button class="btn btn-outline" onclick="window.print()">🖨 Imprimir horario</button>
+    </div>
+  </div>
+
+  <!-- CLASES -->
+  <div class="sec" id="sec-clases" style="display:none">
+    <div class="card">
+      <div class="card-title" id="clases-title">Historial de clases</div>
+      <div class="stat-row" id="clases-stats"></div>
+      <div id="clases-content"></div>
+    </div>
+  </div>
+
+  <!-- NOTAS -->
+  <div class="sec" id="sec-notas" style="display:none">
+    <div class="card">
+      <div class="card-title" id="notas-title">Notas académicas</div>
+      <div id="notas-content"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- MODAL SOLICITAR -->
+<div class="modal-bg" id="modal-solicitar">
+  <div class="modal">
+    <h3>Solicitar horario</h3>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:16px" id="sol-slot"></p>
+    <div class="field">
+      <label>¿Para cuál de mis hijos?</label>
+      <select id="sol-hijo"><option value="">Seleccionar</option></select>
+    </div>
+    <div class="modal-btns">
+      <button class="btn btn-outline" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-wa" onclick="enviarSolicitud()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Enviar por WhatsApp
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+const DB_KEY = 'rothbard_db';
+const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+const WA = '51994240515';
+
+function getDB() {
+  const def = { padres:[], hijos:[], cursos:[], horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]}, horarios_asignados:[], clases:[], notas:[] };
+  try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
+  catch { return def; }
+}
+
+// AUTH
+const auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
+if (!auth || auth.type !== 'padre') { location.href = 'index.html'; }
+
+const db = getDB();
+const padre = db.padres.find(p => p.id === auth.id);
+if (!padre) { location.href = 'index.html'; }
+
+document.getElementById('hd-nombre').textContent = padre.nombre;
+const misHijos = db.hijos.filter(h => h.padre_id === padre.id);
+
+let hijoActivo = misHijos[0]?.id || null;
+let pendingSlot = null;
+
+function logout() { sessionStorage.clear(); location.href = 'index.html'; }
+
+// HIJO TABS
+function renderHijoTabs() {
+  document.getElementById('hijo-bar').innerHTML = misHijos.map(h =>
+    `<div class="hijo-tab ${h.id === hijoActivo ? 'on' : ''}" onclick="selectHijo('${h.id}')">${h.nombre}</div>`
+  ).join('');
+}
+
+function selectHijo(id) {
+  hijoActivo = id;
+  renderHijoTabs();
+  renderCurrentSec();
+}
+
+// SECTION NAV
+let currentSec = 'horario';
+function showSec(id, el) {
+  document.querySelectorAll('.sec').forEach(s => s.style.display = 'none');
+  document.querySelectorAll('.sec-tab').forEach(t => t.classList.remove('on'));
+  document.getElementById('sec-' + id).style.display = 'block';
+  el.classList.add('on');
+  currentSec = id;
+  renderCurrentSec();
+}
+
+function renderCurrentSec() {
+  if (currentSec === 'horario') renderHorario();
+  if (currentSec === 'clases') renderClases();
+  if (currentSec === 'notas') renderNotas();
+}
+
+// HORARIO
+function renderHorario() {
+  const db = getDB();
+  const hd = db.horario_disponible;
+  const ha = db.horarios_asignados;
+  const misAsig = ha.filter(a => a.activo && a.hijo_id === hijoActivo);
+
+  // Mi horario
+  if (!misAsig.length) {
+    document.getElementById('mi-horario').innerHTML = '<div class="empty">Sin horario asignado aún. Solicita un horario disponible.</div>';
+  } else {
+    const ordenados = [...misAsig].sort((a,b) => DAYS.indexOf(a.dia) - DAYS.indexOf(b.dia) || a.hora.localeCompare(b.hora));
+    document.getElementById('mi-horario').innerHTML = `
+      <div style="display:flex;flex-wrap:wrap;gap:10px">
+        ${ordenados.map(a => `<div style="background:rgba(45,90,86,.12);border:1px solid rgba(45,90,86,.2);border-radius:8px;padding:10px 16px;text-align:center">
+          <div style="font-weight:700;color:var(--teal-dark);font-size:15px">${a.dia}</div>
+          <div style="font-size:20px;font-family:'Playfair Display',serif;color:var(--teal)">${a.hora}</div>
+        </div>`).join('')}
+      </div>`;
+  }
+
+  // Matriz
+  const hijo = db.hijos.find(h => h.id === hijoActivo);
+  let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+  HOURS.forEach(h => {
+    html += `<tr><td class="hour-lbl">${h}</td>`;
+    DAYS.forEach(day => {
+      const avail = (hd[day] || []).includes(h);
+      const miAsig = misAsig.find(a => a.dia === day && a.hora === h);
+      if (miAsig) {
+        html += `<td class="cell-mine">${hijo?.nombre.split(' ')[0] || '✓'}</td>`;
+      } else if (avail) {
+        html += `<td class="cell-on" onclick="solicitarSlot('${day}','${h}')">✓</td>`;
+      } else {
+        html += `<td class="cell-off"></td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('matrix-padre').innerHTML = html;
+
+  // Selector de hijos en modal
+  document.getElementById('sol-hijo').innerHTML = '<option value="">Seleccionar</option>' +
+    misHijos.map(h => `<option value="${h.id}" ${h.id === hijoActivo ? 'selected' : ''}>${h.nombre}</option>`).join('');
+}
+
+function solicitarSlot(day, hour) {
+  pendingSlot = { day, hour };
+  document.getElementById('sol-slot').textContent = `${day} a las ${hour}`;
+  document.getElementById('modal-solicitar').classList.add('open');
+}
+
+function enviarSolicitud() {
+  const hijoId = document.getElementById('sol-hijo').value;
+  if (!hijoId) return alert('Selecciona un hijo');
+  const hijo = db.hijos.find(h => h.id === hijoId);
+  const msg = encodeURIComponent(`Hola profesor, soy ${padre.nombre}. Quisiera solicitar el horario del día ${pendingSlot.day} a las ${pendingSlot.hour} para mi hijo/a ${hijo?.nombre || ''}. Quedo pendiente de su confirmación.`);
+  window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
+  closeModal();
+}
+
+// CLASES
+function renderClases() {
+  const db = getDB();
+  const clases = db.clases.filter(c => c.hijo_id === hijoActivo).sort((a,b) => b.fecha.localeCompare(a.fecha));
+  const hijo = db.hijos.find(h => h.id === hijoActivo);
+  document.getElementById('clases-title').textContent = `Clases — ${hijo?.nombre || ''}`;
+  const dictadas = clases.filter(c => c.dictada).length;
+  const conTarea = clases.filter(c => c.tarea).length;
+  const conExamen = clases.filter(c => c.hubo_examen).length;
+  document.getElementById('clases-stats').innerHTML = `
+    <div class="stat-mini"><div class="num">${dictadas}</div><div class="lbl">Clases dictadas</div></div>
+    <div class="stat-mini"><div class="num">${conTarea}</div><div class="lbl">Con tarea</div></div>
+    <div class="stat-mini"><div class="num">${conExamen}</div><div class="lbl">Exámenes</div></div>
+  `;
+  if (!clases.length) { document.getElementById('clases-content').innerHTML = '<div class="empty">Sin clases registradas aún</div>'; return; }
+  document.getElementById('clases-content').innerHTML = clases.map(c => `
+    <div class="clase-card">
+      <div class="clase-card-header">
+        <span class="badge ${c.dictada ? 'badge-green' : 'badge-red'}">${c.dictada ? '✓ Dictada' : '✗ No dictada'}</span>
+        <span class="badge badge-teal">${c.fecha} ${c.hora}</span>
+      </div>
+      ${c.temas ? `<div style="font-size:13px;margin-bottom:5px"><strong>Temas:</strong> ${c.temas}</div>` : ''}
+      ${c.tarea ? `<div style="font-size:13px;margin-bottom:5px;color:var(--yellow)"><strong>Tarea:</strong> ${c.tarea}</div>` : ''}
+      ${c.hubo_examen ? `<div style="font-size:13px;margin-bottom:5px"><strong>Examen:</strong> ${c.resultado_examen || 'Sin resultado registrado'}</div>` : ''}
+      ${c.observaciones ? `<div style="font-size:13px;color:var(--muted);border-top:1px solid var(--border);margin-top:8px;padding-top:8px">${c.observaciones}</div>` : ''}
+    </div>`).join('');
+}
+
+// NOTAS
+function renderNotas() {
+  const db = getDB();
+  const hijo = db.hijos.find(h => h.id === hijoActivo);
+  document.getElementById('notas-title').textContent = `Notas — ${hijo?.nombre || ''}`;
+  const notas = db.notas.filter(n => n.hijo_id === hijoActivo).sort((a,b) => b.fecha.localeCompare(a.fecha));
+  if (!notas.length) { document.getElementById('notas-content').innerHTML = '<div class="empty">Sin notas registradas aún</div>'; return; }
+  document.getElementById('notas-content').innerHTML = `
+    <table class="tbl">
+      <thead><tr><th>Curso</th><th>Nota</th><th>Período</th><th>Fecha</th></tr></thead>
+      <tbody>${notas.map(n => {
+        const c = db.cursos.find(x => x.id === n.curso_id);
+        const color = n.valor >= 14 ? 'badge-green' : n.valor >= 11 ? 'badge-yellow' : 'badge-red';
+        return `<tr>
+          <td>${c?.nombre || '—'}</td>
+          <td><span class="badge ${color}">${n.valor}/20</span></td>
+          <td>${n.periodo || '—'}</td>
+          <td>${n.fecha || '—'}</td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table>`;
+}
+
+function closeModal() { document.getElementById('modal-solicitar').classList.remove('open'); }
+document.getElementById('modal-solicitar').addEventListener('click', e => { if (e.target === document.getElementById('modal-solicitar')) closeModal(); });
+
+// INIT
+renderHijoTabs();
+renderHorario();
+</script>
+</body>
+</html>
