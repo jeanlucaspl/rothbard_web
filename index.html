@@ -59,6 +59,17 @@
     </button>
   </div>
   <p class="footer">© 2026 Academia Murray Rothbard</p>
+
+  <!-- Sincronización de datos entre dispositivos -->
+  <div id="sync-panel" style="display:none;margin-top:16px">
+    <div class="card" style="text-align:left">
+      <p style="font-size:13px;font-weight:600;color:var(--teal-dark);margin-bottom:10px">Cargar datos en este dispositivo</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona el archivo JSON exportado desde el dispositivo principal.</p>
+      <input type="file" id="sync-file" accept=".json" style="font-size:13px;margin-bottom:10px;width:100%">
+      <button onclick="importarSync()" style="margin-top:0">Importar y sincronizar</button>
+    </div>
+  </div>
+  <p style="margin-top:12px;font-size:11px;color:var(--border);cursor:pointer;user-select:none" onclick="toggleSync()">···</p>
 </div>
 <script>
   const ADMIN_DNI = '48240305';
@@ -95,6 +106,26 @@
   }
 
   document.getElementById('dni').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+  function toggleSync() {
+    const p = document.getElementById('sync-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  }
+
+  function importarSync() {
+    const file = document.getElementById('sync-file').files[0];
+    if (!file) return alert('Selecciona un archivo JSON');
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        JSON.parse(e.target.result);
+        localStorage.setItem('rothbard_db', e.target.result);
+        alert('Datos cargados correctamente. Ya puedes ingresar.');
+        document.getElementById('sync-panel').style.display = 'none';
+      } catch { alert('Archivo inválido'); }
+    };
+    reader.readAsText(file);
+  }
 
   function solicitarInfo() {
     const msg = encodeURIComponent('Hola, me interesa obtener información sobre la Academia Murray Rothbard. ¿Me podría brindar más detalles sobre los cursos y horarios disponibles?');
