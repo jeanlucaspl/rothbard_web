@@ -81,10 +81,10 @@
     table.matrix th:first-child{width:64px}
     table.matrix td{border:1px solid var(--border);padding:0;height:38px;text-align:center;font-size:11px;transition:all .15s}
     td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream);white-space:nowrap}
-    td.cell-off{background:#CDCDC9;cursor:pointer}
-    td.cell-off:hover{background:#B8B8B4}
-    td.cell-on{background:#B8E8CB;color:#1A5E38;cursor:pointer;border:2px solid #6DC998;font-weight:700;font-size:11px}
-    td.cell-on:hover{background:#9ADDB7}
+    td.cell-off{background:#FDDEDE;cursor:pointer;border:1px solid #F5AEAE}
+    td.cell-off:hover{background:#F5C8C8}
+    td.cell-on{background:#FAFAF8;cursor:pointer;border:1px solid var(--border)}
+    td.cell-on:hover{background:#EBF4F3}
     td.cell-taken{background:#ADC9F5;color:#1A3670;cursor:pointer;font-weight:700;font-size:10px;padding:2px 4px;line-height:1.25;border:2px solid #7AAAF0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px}
     td.cell-taken:hover{background:#90B5F0}
     .legend{display:flex;gap:16px;margin-top:10px;font-size:12px;align-items:center;flex-wrap:wrap}
@@ -207,8 +207,8 @@
           <table class="matrix" id="matrix-table"></table>
         </div>
         <div class="legend">
-          <div class="leg"><div class="leg-dot" style="background:#CDCDC9;border:1px solid #b0b0ac"></div> No disponible</div>
-          <div class="leg"><div class="leg-dot" style="background:#B8E8CB;border:2px solid #6DC998"></div> Disponible</div>
+          <div class="leg"><div class="leg-dot" style="background:#FDDEDE;border:1px solid #F5AEAE"></div> No disponible</div>
+          <div class="leg"><div class="leg-dot" style="background:#FAFAF8;border:1px solid #ccc"></div> Disponible</div>
           <div class="leg"><div class="leg-dot" style="background:#ADC9F5;border:2px solid #7AAAF0"></div> Asignado</div>
         </div>
       </div>
