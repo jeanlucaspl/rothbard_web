@@ -417,6 +417,8 @@ const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
 const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
 const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
 const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+// eq() codifica valores con caracteres especiales (tildes, ñ, espacios)
+const eq = v => `eq.${encodeURIComponent(v)}`;
 const sbGet   = (t,q='') => fetch(`${SB}/${t}?${q}`,{headers:H}).then(r=>r.json());
 const sbPost  = (t,b)    => fetch(`${SB}/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)}).then(r=>r.json());
 const sbDel   = (t,q)    => fetch(`${SB}/${t}?${q}`,{method:'DELETE',headers:H});
@@ -532,7 +534,7 @@ async function confirmarAsignacion() {
   const hijoId = document.getElementById('modal-hijo-sel').value;
   if (!hijoId || !pendingSlot) return alert('Selecciona un alumno');
   // quitar asignación previa del mismo slot si existe
-  await sbDel('horarios_asignados', `dia=eq.${pendingSlot.day}&hora=eq.${pendingSlot.hour}`);
+  await sbDel('horarios_asignados', `dia=${eq(pendingSlot.day)}&hora=${eq(pendingSlot.hour)}`);
   await sbPost('horarios_asignados', {
     id: uid(), hijo_id: hijoId, dia: pendingSlot.day, hora: pendingSlot.hour,
     activo: true, fecha_inicio: new Date().toISOString().slice(0,10)
@@ -544,7 +546,7 @@ async function confirmarAsignacion() {
 
 async function quitarAsignacion() {
   const id = document.getElementById('btn-quitar-asig').dataset.asigId;
-  await sbDel('horarios_asignados', `id=eq.${id}`);
+  await sbDel('horarios_asignados', `id=${eq(id)}`);
   closeModal('modal-ver-asig');
   renderMatrix();
   renderAsignados();
@@ -586,7 +588,7 @@ async function crearPadre() {
   const dni = document.getElementById('p-dni').value.trim();
   const tel = document.getElementById('p-tel').value.trim();
   if (!nombre || !dni) return alert('Nombre y DNI son obligatorios');
-  const existing = await sbGet('padres', `dni=eq.${dni}`);
+  const existing = await sbGet('padres', `dni=${eq(dni)}`);
   if (existing.length) return alert('Ya existe un padre con ese DNI');
   await sbPost('padres', { id: uid(), nombre, dni, telefono: tel });
   document.getElementById('p-nombre').value = '';
@@ -645,23 +647,23 @@ async function guardarHijo() {
 
 async function eliminarPadre(id) {
   if (!confirm('¿Eliminar este padre y todos sus hijos?')) return;
-  const hijos = await sbGet('hijos', `padre_id=eq.${id}`);
+  const hijos = await sbGet('hijos', `padre_id=${eq(id)}`);
   for (const h of hijos) {
-    await sbDel('horarios_asignados', `hijo_id=eq.${h.id}`);
-    await sbDel('clases', `hijo_id=eq.${h.id}`);
-    await sbDel('notas', `hijo_id=eq.${h.id}`);
-    await sbDel('hijos', `id=eq.${h.id}`);
+    await sbDel('horarios_asignados', `hijo_id=${eq(h.id)}`);
+    await sbDel('clases', `hijo_id=${eq(h.id)}`);
+    await sbDel('notas', `hijo_id=${eq(h.id)}`);
+    await sbDel('hijos', `id=${eq(h.id)}`);
   }
-  await sbDel('padres', `id=eq.${id}`);
+  await sbDel('padres', `id=${eq(id)}`);
   renderAlumnos();
 }
 
 async function eliminarHijo(id) {
   if (!confirm('¿Eliminar este alumno?')) return;
-  await sbDel('horarios_asignados', `hijo_id=eq.${id}`);
-  await sbDel('clases', `hijo_id=eq.${id}`);
-  await sbDel('notas', `hijo_id=eq.${id}`);
-  await sbDel('hijos', `id=eq.${id}`);
+  await sbDel('horarios_asignados', `hijo_id=${eq(id)}`);
+  await sbDel('clases', `hijo_id=${eq(id)}`);
+  await sbDel('notas', `hijo_id=${eq(id)}`);
+  await sbDel('hijos', `id=${eq(id)}`);
   renderAlumnos();
 }
 
@@ -702,7 +704,7 @@ async function registrarClase() {
 
 async function renderClases() {
   const filtro = document.getElementById('cl-filtro')?.value || '';
-  const q = filtro ? `hijo_id=eq.${filtro}&order=fecha.desc` : 'order=fecha.desc';
+  const q = filtro ? `hijo_id=${eq(filtro)}&order=fecha.desc` : 'order=fecha.desc';
   const [clases, hijos] = await Promise.all([sbGet('clases', q), sbGet('hijos')]);
   if (!clases.length) { document.getElementById('clases-list').innerHTML = '<div class="empty">Sin clases registradas</div>'; return; }
   document.getElementById('clases-list').innerHTML = clases.map(c => {
@@ -724,7 +726,7 @@ async function renderClases() {
 
 async function eliminarClase(id) {
   if (!confirm('¿Eliminar este registro de clase?')) return;
-  await sbDel('clases', `id=eq.${id}`);
+  await sbDel('clases', `id=${eq(id)}`);
   renderClases();
 }
 
@@ -757,8 +759,8 @@ function renderCursos(cursos) {
 
 async function eliminarCurso(id) {
   if (!confirm('¿Eliminar curso?')) return;
-  await sbDel('notas', `curso_id=eq.${id}`);
-  await sbDel('cursos', `id=eq.${id}`);
+  await sbDel('notas', `curso_id=${eq(id)}`);
+  await sbDel('cursos', `id=${eq(id)}`);
   populateCursoSelects();
 }
 
@@ -778,7 +780,7 @@ async function asignarNota() {
 
 async function renderNotas() {
   const filtro = document.getElementById('n-filtro')?.value || '';
-  const q = filtro ? `hijo_id=eq.${filtro}&order=fecha.desc` : 'order=fecha.desc';
+  const q = filtro ? `hijo_id=${eq(filtro)}&order=fecha.desc` : 'order=fecha.desc';
   const [notas, hijos, cursos] = await Promise.all([sbGet('notas', q), sbGet('hijos'), sbGet('cursos')]);
   if (!notas.length) { document.getElementById('notas-list').innerHTML = '<div class="empty">Sin notas registradas</div>'; return; }
   document.getElementById('notas-list').innerHTML = `
@@ -798,7 +800,7 @@ async function renderNotas() {
 
 async function eliminarNota(id) {
   if (!confirm('¿Eliminar nota?')) return;
-  await sbDel('notas', `id=eq.${id}`);
+  await sbDel('notas', `id=${eq(id)}`);
   renderNotas();
 }
 
