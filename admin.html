@@ -81,8 +81,6 @@
     table.matrix th:first-child{width:64px}
     table.matrix td{border:1px solid var(--border);padding:0;height:38px;text-align:center;font-size:11px;transition:all .15s}
     td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream);white-space:nowrap}
-    td.cell-off{background:#FDDEDE;cursor:pointer;border:1px solid #F5AEAE}
-    td.cell-off:hover{background:#F5C8C8}
     td.cell-on{background:#FAFAF8;cursor:pointer;border:1px solid var(--border)}
     td.cell-on:hover{background:#EBF4F3}
     td.cell-taken{background:#ADC9F5;color:#1A3670;cursor:pointer;font-weight:700;font-size:10px;padding:2px 4px;line-height:1.25;border:2px solid #7AAAF0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:80px}
@@ -206,15 +204,10 @@
       </div>
       <div class="card" style="margin-bottom:20px">
         <div class="card-title">Disponibilidad semanal</div>
-        <div class="matrix-controls">
-          <button class="btn btn-outline btn-sm" id="btn-mode" onclick="toggleMode()">Modo: Editar disponibilidad</button>
-          <span class="mode-badge mode-disp" id="mode-badge">● Editando disponibilidad</span>
-        </div>
         <div class="matrix-wrap">
           <table class="matrix" id="matrix-table"></table>
         </div>
         <div class="legend">
-          <div class="leg"><div class="leg-dot" style="background:#FDDEDE;border:1px solid #F5AEAE"></div> No disponible</div>
           <div class="leg"><div class="leg-dot" style="background:#FAFAF8;border:1px solid #ccc"></div> Disponible</div>
           <div class="leg"><div class="leg-dot" style="background:#ADC9F5;border:2px solid #7AAAF0"></div> Asignado</div>
         </div>
@@ -261,10 +254,13 @@
           </div>
           <div class="form-row">
             <div class="field"><label>Fecha</label><input id="cl-fecha" type="date"></div>
-            <div class="field"><label>Hora</label>
-              <select id="cl-hora">
-                <option value="">-- hora --</option>
-              </select>
+          </div>
+          <div class="form-row">
+            <div class="field"><label>Hora inicio</label>
+              <select id="cl-hora-ini"><option value="">-- inicio --</option></select>
+            </div>
+            <div class="field"><label>Hora fin</label>
+              <select id="cl-hora-fin"><option value="">-- fin --</option></select>
             </div>
           </div>
           <div class="form-row col1">
@@ -487,30 +483,15 @@ function renderPanel() {
 }
 
 // ── MATRIX ───────────────────────────────────────────────────────────────
-let matrixMode = 'disponibilidad'; // 'disponibilidad' | 'asignacion'
 let pendingSlot = null;
-
-function toggleMode() {
-  matrixMode = matrixMode === 'disponibilidad' ? 'asignacion' : 'disponibilidad';
-  document.getElementById('btn-mode').textContent = matrixMode === 'disponibilidad' ? 'Modo: Editar disponibilidad' : 'Modo: Asignar alumnos';
-  const badge = document.getElementById('mode-badge');
-  if (matrixMode === 'disponibilidad') {
-    badge.className = 'mode-badge mode-disp'; badge.textContent = '● Editando disponibilidad';
-  } else {
-    badge.className = 'mode-badge mode-asign'; badge.textContent = '● Asignando alumnos';
-  }
-  renderMatrix();
-}
 
 function renderMatrix() {
   const db = getDB();
-  const hd = db.horario_disponible;
   const ha = db.horarios_asignados;
   let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
   HOURS.forEach(h => {
     html += `<tr><td class="hour-lbl">${h}</td>`;
     DAYS.forEach(day => {
-      const avail = (hd[day] || []).includes(h);
       const asig = ha.find(a => a.dia === day && a.hora === h && a.activo);
       if (asig) {
         const hijo = db.hijos.find(x => x.id === asig.hijo_id);
@@ -520,10 +501,8 @@ function renderMatrix() {
           ? `<strong>${hijo.nombre}</strong><br>Padre: ${padre?.nombre || '—'}`
           : '?';
         html += `<td class="cell-taken" data-day="${day}" data-hour="${h}" data-asig="${asig.id}" onclick="cellClick(this)" onmouseenter="showTip(event,'${tipHtml.replace(/'/g,"&#39;")}')" onmouseleave="hideTip()">${label}</td>`;
-      } else if (avail) {
-        html += `<td class="cell-on" data-day="${day}" data-hour="${h}" onclick="cellClick(this)"></td>`;
       } else {
-        html += `<td class="cell-off" data-day="${day}" data-hour="${h}" onclick="cellClick(this)"></td>`;
+        html += `<td class="cell-on" data-day="${day}" data-hour="${h}" onclick="cellClick(this)"></td>`;
       }
     });
     html += '</tr>';
@@ -535,32 +514,19 @@ function renderMatrix() {
 function cellClick(td) {
   const day = td.dataset.day, hour = td.dataset.hour;
   const db = getDB();
-  if (matrixMode === 'disponibilidad') {
-    const hd = db.horario_disponible;
-    if (!hd[day]) hd[day] = [];
-    const idx = hd[day].indexOf(hour);
-    if (idx >= 0) hd[day].splice(idx, 1);
-    else hd[day].push(hour);
-    saveDB(db);
-    renderMatrix();
+  if (td.dataset.asig) {
+    const asig = db.horarios_asignados.find(a => a.id === td.dataset.asig);
+    const hijo = db.hijos.find(h => h.id === asig.hijo_id);
+    document.getElementById('modal-ver-info').textContent = `${hijo?.nombre || '—'} — ${day} ${hour}`;
+    document.getElementById('btn-quitar-asig').dataset.asigId = asig.id;
+    openModal('modal-ver-asig');
   } else {
-    // asignacion mode
-    if (td.dataset.asig) {
-      // ver asignación existente
-      const asig = db.horarios_asignados.find(a => a.id === td.dataset.asig);
-      const hijo = db.hijos.find(h => h.id === asig.hijo_id);
-      document.getElementById('modal-ver-info').textContent = `${hijo?.nombre || '—'} — ${day} ${hour}`;
-      document.getElementById('btn-quitar-asig').dataset.asigId = asig.id;
-      openModal('modal-ver-asig');
-    } else if (td.classList.contains('cell-on')) {
-      // asignar alumno a esta celda disponible
-      pendingSlot = { day, hour };
-      document.getElementById('modal-slot-info').textContent = `${day} a las ${hour}`;
-      const sel = document.getElementById('modal-hijo-sel');
-      sel.innerHTML = '<option value="">Seleccionar alumno</option>' +
-        db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-      openModal('modal-asignar');
-    }
+    pendingSlot = { day, hour };
+    document.getElementById('modal-slot-info').textContent = `${day} a las ${hour}`;
+    const sel = document.getElementById('modal-hijo-sel');
+    sel.innerHTML = '<option value="">Seleccionar alumno</option>' +
+      db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+    openModal('modal-asignar');
   }
 }
 
@@ -710,8 +676,9 @@ function populateHijoSelects() {
   const opts = '<option value="">Seleccionar</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
   document.getElementById('cl-hijo').innerHTML = opts;
   document.getElementById('cl-filtro').innerHTML = '<option value="">Todos</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-  // horas
-  document.getElementById('cl-hora').innerHTML = '<option value="">-- hora --</option>' + HOURS.map(h => `<option value="${h}">${h}</option>`).join('');
+  const horaOpts = '<option value="">--</option>' + HOURS.map(h => `<option value="${h}">${h}</option>`).join('');
+  document.getElementById('cl-hora-ini').innerHTML = horaOpts;
+  document.getElementById('cl-hora-fin').innerHTML = horaOpts;
   // fecha hoy
   document.getElementById('cl-fecha').value = new Date().toISOString().slice(0,10);
 }
@@ -719,8 +686,10 @@ function populateHijoSelects() {
 function registrarClase() {
   const hijoId = document.getElementById('cl-hijo').value;
   const fecha = document.getElementById('cl-fecha').value;
-  const hora = document.getElementById('cl-hora').value;
-  if (!hijoId || !fecha || !hora) return alert('Completa alumno, fecha y hora');
+  const horaIni = document.getElementById('cl-hora-ini').value;
+  const horaFin = document.getElementById('cl-hora-fin').value;
+  if (!hijoId || !fecha || !horaIni || !horaFin) return alert('Completa alumno, fecha y rango de hora');
+  const hora = horaIni === horaFin ? horaIni : `${horaIni} - ${horaFin}`;
   const db = getDB();
   db.clases.push({
     id: uid(),
