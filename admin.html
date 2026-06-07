@@ -412,24 +412,21 @@
 
 <div id="cell-tip"></div>
 <script>
-// ── DB ──────────────────────────────────────────────────────────────────
-const DB_KEY = 'rothbard_db';
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────
+const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
+const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const sbGet   = (t,q='') => fetch(`${SB}/${t}?${q}`,{headers:H}).then(r=>r.json());
+const sbPost  = (t,b)    => fetch(`${SB}/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)}).then(r=>r.json());
+const sbDel   = (t,q)    => fetch(`${SB}/${t}?${q}`,{method:'DELETE',headers:H});
+const sbPatch = (t,q,b)  => fetch(`${SB}/${t}?${q}`,{method:'PATCH',headers:H,body:JSON.stringify(b)}).then(r=>r.json());
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
 const WA = '+51994240515';
-
-function getDB() {
-  const def = {
-    padres:[], hijos:[], cursos:[],
-    horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]},
-    horarios_asignados:[], clases:[], notas:[]
-  };
-  try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
-  catch { return def; }
-}
-function saveDB(db) { localStorage.setItem(DB_KEY, JSON.stringify(db)); }
-function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
 
 // ── AUTH ─────────────────────────────────────────────────────────────────
 const auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
@@ -456,23 +453,23 @@ function showSection(id, el) {
 }
 
 // ── PANEL ─────────────────────────────────────────────────────────────────
-function renderPanel() {
-  const db = getDB();
-  const totalHijos = db.hijos.length;
-  const totalClases = db.clases.filter(c => c.dictada).length;
-  const totalPadres = db.padres.length;
+async function renderPanel() {
+  const [padres, hijos, clases, ha] = await Promise.all([
+    sbGet('padres'),
+    sbGet('hijos'),
+    sbGet('clases','dictada=eq.true'),
+    sbGet('horarios_asignados','activo=eq.true')
+  ]);
   document.getElementById('stats-panel').innerHTML = `
-    <div class="stat-card"><div class="stat-num">${totalPadres}</div><div class="stat-lbl">Familias registradas</div></div>
-    <div class="stat-card"><div class="stat-num">${totalHijos}</div><div class="stat-lbl">Alumnos activos</div></div>
-    <div class="stat-card"><div class="stat-num">${totalClases}</div><div class="stat-lbl">Clases dictadas</div></div>
+    <div class="stat-card"><div class="stat-num">${padres.length}</div><div class="stat-lbl">Familias registradas</div></div>
+    <div class="stat-card"><div class="stat-num">${hijos.length}</div><div class="stat-lbl">Alumnos activos</div></div>
+    <div class="stat-card"><div class="stat-num">${clases.length}</div><div class="stat-lbl">Clases dictadas</div></div>
   `;
-  // Próximas clases: horarios asignados para hoy y mañana
-  const hoy = new Date();
   const diasSem = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
-  const diaHoy = diasSem[hoy.getDay()];
-  const asigHoy = db.horarios_asignados.filter(a => a.dia === diaHoy && a.activo);
+  const diaHoy = diasSem[new Date().getDay()];
+  const asigHoy = ha.filter(a => a.dia === diaHoy);
   const html = asigHoy.length ? asigHoy.map(a => {
-    const h = db.hijos.find(x => x.id === a.hijo_id);
+    const h = hijos.find(x => x.id === a.hijo_id);
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
       <span class="badge badge-teal">${a.hora}</span>
       <span>${h ? h.nombre : '—'}</span>
@@ -485,22 +482,25 @@ function renderPanel() {
 // ── MATRIX ───────────────────────────────────────────────────────────────
 let pendingSlot = null;
 
-function renderMatrix() {
-  const db = getDB();
-  const ha = db.horarios_asignados;
+async function renderMatrix() {
+  const [ha, hijos, padres] = await Promise.all([
+    sbGet('horarios_asignados','activo=eq.true'),
+    sbGet('hijos'),
+    sbGet('padres')
+  ]);
   let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
   HOURS.forEach(h => {
     html += `<tr><td class="hour-lbl">${h}</td>`;
     DAYS.forEach(day => {
-      const asig = ha.find(a => a.dia === day && a.hora === h && a.activo);
+      const asig = ha.find(a => a.dia === day && a.hora === h);
       if (asig) {
-        const hijo = db.hijos.find(x => x.id === asig.hijo_id);
-        const padre = hijo ? db.padres.find(p => p.id === hijo.padre_id) : null;
+        const hijo = hijos.find(x => x.id === asig.hijo_id);
+        const padre = hijo ? padres.find(p => p.id === hijo.padre_id) : null;
         const label = hijo ? hijo.nombre.split(' ')[0] : '?';
         const tipHtml = hijo
           ? `<strong>${hijo.nombre}</strong><br>Padre: ${padre?.nombre || '—'}`
           : '?';
-        html += `<td class="cell-taken" data-day="${day}" data-hour="${h}" data-asig="${asig.id}" onclick="cellClick(this)" onmouseenter="showTip(event,'${tipHtml.replace(/'/g,"&#39;")}')" onmouseleave="hideTip()">${label}</td>`;
+        html += `<td class="cell-taken" data-day="${day}" data-hour="${h}" data-asig="${asig.id}" data-hijo="${hijo?.nombre || '?'}" onclick="cellClick(this)" onmouseenter="showTip(event,'${tipHtml.replace(/'/g,"&#39;")}')" onmouseleave="hideTip()">${label}</td>`;
       } else {
         html += `<td class="cell-on" data-day="${day}" data-hour="${h}" onclick="cellClick(this)"></td>`;
       }
@@ -511,72 +511,68 @@ function renderMatrix() {
   document.getElementById('matrix-table').innerHTML = html;
 }
 
-function cellClick(td) {
+async function cellClick(td) {
   const day = td.dataset.day, hour = td.dataset.hour;
-  const db = getDB();
   if (td.dataset.asig) {
-    const asig = db.horarios_asignados.find(a => a.id === td.dataset.asig);
-    const hijo = db.hijos.find(h => h.id === asig.hijo_id);
-    document.getElementById('modal-ver-info').textContent = `${hijo?.nombre || '—'} — ${day} ${hour}`;
-    document.getElementById('btn-quitar-asig').dataset.asigId = asig.id;
+    document.getElementById('modal-ver-info').textContent = `${td.dataset.hijo || '—'} — ${day} ${hour}`;
+    document.getElementById('btn-quitar-asig').dataset.asigId = td.dataset.asig;
     openModal('modal-ver-asig');
   } else {
     pendingSlot = { day, hour };
     document.getElementById('modal-slot-info').textContent = `${day} a las ${hour}`;
+    const hijos = await sbGet('hijos');
     const sel = document.getElementById('modal-hijo-sel');
     sel.innerHTML = '<option value="">Seleccionar alumno</option>' +
-      db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+      hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
     openModal('modal-asignar');
   }
 }
 
-function confirmarAsignacion() {
+async function confirmarAsignacion() {
   const hijoId = document.getElementById('modal-hijo-sel').value;
   if (!hijoId || !pendingSlot) return alert('Selecciona un alumno');
-  const db = getDB();
   // quitar asignación previa del mismo slot si existe
-  db.horarios_asignados = db.horarios_asignados.filter(a => !(a.dia === pendingSlot.day && a.hora === pendingSlot.hour));
-  db.horarios_asignados.push({ id: uid(), hijo_id: hijoId, dia: pendingSlot.day, hora: pendingSlot.hour, activo: true, fecha_inicio: new Date().toISOString().slice(0,10) });
-  saveDB(db);
+  await sbDel('horarios_asignados', `dia=eq.${pendingSlot.day}&hora=eq.${pendingSlot.hour}`);
+  await sbPost('horarios_asignados', {
+    id: uid(), hijo_id: hijoId, dia: pendingSlot.day, hora: pendingSlot.hour,
+    activo: true, fecha_inicio: new Date().toISOString().slice(0,10)
+  });
   closeModal('modal-asignar');
   renderMatrix();
   renderAsignados();
 }
 
-function quitarAsignacion() {
+async function quitarAsignacion() {
   const id = document.getElementById('btn-quitar-asig').dataset.asigId;
-  const db = getDB();
-  db.horarios_asignados = db.horarios_asignados.filter(a => a.id !== id);
-  saveDB(db);
+  await sbDel('horarios_asignados', `id=eq.${id}`);
   closeModal('modal-ver-asig');
   renderMatrix();
   renderAsignados();
 }
 
-function renderAsignados() {
-  const db = getDB();
-  const activos = db.horarios_asignados.filter(a => a.activo);
-  if (!activos.length) {
+async function renderAsignados() {
+  const [ha, hijos] = await Promise.all([
+    sbGet('horarios_asignados','activo=eq.true'),
+    sbGet('hijos')
+  ]);
+  if (!ha.length) {
     document.getElementById('asignados-list').innerHTML = '<div class="empty">Sin horarios asignados aún</div>';
     return;
   }
-  const ordenados = [...activos].sort((a,b) => DAYS.indexOf(a.dia) - DAYS.indexOf(b.dia) || a.hora.localeCompare(b.hora));
+  const ordenados = [...ha].sort((a,b) => DAYS.indexOf(a.dia) - DAYS.indexOf(b.dia) || a.hora.localeCompare(b.hora));
   document.getElementById('asignados-list').innerHTML = `
     <table class="tbl">
       <thead><tr><th>Día</th><th>Hora</th><th>Alumno</th><th>Desde</th></tr></thead>
       <tbody>${ordenados.map(a => {
-        const h = db.hijos.find(x => x.id === a.hijo_id);
+        const h = hijos.find(x => x.id === a.hijo_id);
         return `<tr><td>${a.dia}</td><td><span class="badge badge-teal">${a.hora}</span></td><td>${h?.nombre || '—'}</td><td>${a.fecha_inicio || '—'}</td></tr>`;
       }).join('')}</tbody>
     </table>`;
 }
 
-function printHorario() {
-  const db = getDB();
-  const activos = db.horarios_asignados.filter(a => a.activo);
-  const diasActivos = DAYS.filter(d =>
-    (db.horario_disponible[d] || []).length > 0 || activos.some(a => a.dia === d)
-  );
+async function printHorario() {
+  const ha = await sbGet('horarios_asignados','activo=eq.true');
+  const diasActivos = DAYS.filter(d => ha.some(a => a.dia === d));
   const subtitulo = diasActivos.length >= 2
     ? `Horario disponible de ${diasActivos[0]} a ${diasActivos[diasActivos.length - 1]}`
     : diasActivos.length === 1 ? `Horario disponible: ${diasActivos[0]}` : 'Horario semanal';
@@ -585,29 +581,28 @@ function printHorario() {
 }
 
 // ── ALUMNOS ───────────────────────────────────────────────────────────────
-function crearPadre() {
+async function crearPadre() {
   const nombre = document.getElementById('p-nombre').value.trim();
   const dni = document.getElementById('p-dni').value.trim();
   const tel = document.getElementById('p-tel').value.trim();
   if (!nombre || !dni) return alert('Nombre y DNI son obligatorios');
-  const db = getDB();
-  if (db.padres.find(p => p.dni === dni)) return alert('Ya existe un padre con ese DNI');
-  db.padres.push({ id: uid(), nombre, dni, telefono: tel, hijos: [] });
-  saveDB(db);
+  const existing = await sbGet('padres', `dni=eq.${dni}`);
+  if (existing.length) return alert('Ya existe un padre con ese DNI');
+  await sbPost('padres', { id: uid(), nombre, dni, telefono: tel });
   document.getElementById('p-nombre').value = '';
   document.getElementById('p-dni').value = '';
   document.getElementById('p-tel').value = '';
   renderAlumnos();
 }
 
-function renderAlumnos() {
-  const db = getDB();
-  if (!db.padres.length) {
+async function renderAlumnos() {
+  const [padres, hijos] = await Promise.all([sbGet('padres'), sbGet('hijos')]);
+  if (!padres.length) {
     document.getElementById('padres-list').innerHTML = '<div class="empty">Sin padres registrados</div>';
     return;
   }
-  document.getElementById('padres-list').innerHTML = db.padres.map(p => {
-    const hijos = db.hijos.filter(h => h.padre_id === p.id);
+  document.getElementById('padres-list').innerHTML = padres.map(p => {
+    const hh = hijos.filter(h => h.padre_id === p.id);
     return `<div class="hijo-section">
       <div class="hijo-header">
         <div>
@@ -619,7 +614,7 @@ function renderAlumnos() {
           <button class="btn btn-danger btn-sm" onclick="eliminarPadre('${p.id}')">✕</button>
         </div>
       </div>
-      ${hijos.length ? hijos.map(h => `
+      ${hh.length ? hh.map(h => `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--white);border-radius:6px;margin-bottom:6px">
           <div>
             <span style="font-weight:500">${h.nombre}</span>
@@ -638,60 +633,58 @@ function abrirModalHijo(padreId) {
   openModal('modal-hijo');
 }
 
-function guardarHijo() {
+async function guardarHijo() {
   const padreId = document.getElementById('modal-padre-id').value;
   const nombre = document.getElementById('h-nombre').value.trim();
   const grado = document.getElementById('h-grado').value.trim();
   if (!nombre) return alert('Ingresa el nombre del alumno');
-  const db = getDB();
-  db.hijos.push({ id: uid(), nombre, grado, padre_id: padreId });
-  saveDB(db);
+  await sbPost('hijos', { id: uid(), nombre, grado, padre_id: padreId });
   closeModal('modal-hijo');
   renderAlumnos();
 }
 
-function eliminarPadre(id) {
+async function eliminarPadre(id) {
   if (!confirm('¿Eliminar este padre y todos sus hijos?')) return;
-  const db = getDB();
-  const hijos = db.hijos.filter(h => h.padre_id === id).map(h => h.id);
-  db.padres = db.padres.filter(p => p.id !== id);
-  db.hijos = db.hijos.filter(h => h.padre_id !== id);
-  db.horarios_asignados = db.horarios_asignados.filter(a => !hijos.includes(a.hijo_id));
-  saveDB(db);
+  const hijos = await sbGet('hijos', `padre_id=eq.${id}`);
+  for (const h of hijos) {
+    await sbDel('horarios_asignados', `hijo_id=eq.${h.id}`);
+    await sbDel('clases', `hijo_id=eq.${h.id}`);
+    await sbDel('notas', `hijo_id=eq.${h.id}`);
+    await sbDel('hijos', `id=eq.${h.id}`);
+  }
+  await sbDel('padres', `id=eq.${id}`);
   renderAlumnos();
 }
 
-function eliminarHijo(id) {
+async function eliminarHijo(id) {
   if (!confirm('¿Eliminar este alumno?')) return;
-  const db = getDB();
-  db.hijos = db.hijos.filter(h => h.id !== id);
-  db.horarios_asignados = db.horarios_asignados.filter(a => a.hijo_id !== id);
-  saveDB(db);
+  await sbDel('horarios_asignados', `hijo_id=eq.${id}`);
+  await sbDel('clases', `hijo_id=eq.${id}`);
+  await sbDel('notas', `hijo_id=eq.${id}`);
+  await sbDel('hijos', `id=eq.${id}`);
   renderAlumnos();
 }
 
 // ── CLASES ────────────────────────────────────────────────────────────────
-function populateHijoSelects() {
-  const db = getDB();
-  const opts = '<option value="">Seleccionar</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+async function populateHijoSelects() {
+  const hijos = await sbGet('hijos');
+  const opts = '<option value="">Seleccionar</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
   document.getElementById('cl-hijo').innerHTML = opts;
-  document.getElementById('cl-filtro').innerHTML = '<option value="">Todos</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  document.getElementById('cl-filtro').innerHTML = '<option value="">Todos</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
   const horaOpts = '<option value="">--</option>' + HOURS.map(h => `<option value="${h}">${h}</option>`).join('');
   document.getElementById('cl-hora-ini').innerHTML = horaOpts;
   document.getElementById('cl-hora-fin').innerHTML = horaOpts;
-  // fecha hoy
   document.getElementById('cl-fecha').value = new Date().toISOString().slice(0,10);
 }
 
-function registrarClase() {
+async function registrarClase() {
   const hijoId = document.getElementById('cl-hijo').value;
   const fecha = document.getElementById('cl-fecha').value;
   const horaIni = document.getElementById('cl-hora-ini').value;
   const horaFin = document.getElementById('cl-hora-fin').value;
   if (!hijoId || !fecha || !horaIni || !horaFin) return alert('Completa alumno, fecha y rango de hora');
   const hora = horaIni === horaFin ? horaIni : `${horaIni} - ${horaFin}`;
-  const db = getDB();
-  db.clases.push({
+  await sbPost('clases', {
     id: uid(),
     hijo_id: hijoId,
     fecha, hora,
@@ -703,20 +696,17 @@ function registrarClase() {
     resultado_examen: document.getElementById('cl-resultado').value.trim(),
     observaciones: document.getElementById('cl-obs').value.trim()
   });
-  saveDB(db);
-  // limpiar
   ['cl-temas','cl-tarea','cl-resultado','cl-obs'].forEach(id => document.getElementById(id).value = '');
   renderClases();
 }
 
-function renderClases() {
-  const db = getDB();
+async function renderClases() {
   const filtro = document.getElementById('cl-filtro')?.value || '';
-  let clases = [...db.clases].sort((a,b) => b.fecha.localeCompare(a.fecha));
-  if (filtro) clases = clases.filter(c => c.hijo_id === filtro);
+  const q = filtro ? `hijo_id=eq.${filtro}&order=fecha.desc` : 'order=fecha.desc';
+  const [clases, hijos] = await Promise.all([sbGet('clases', q), sbGet('hijos')]);
   if (!clases.length) { document.getElementById('clases-list').innerHTML = '<div class="empty">Sin clases registradas</div>'; return; }
   document.getElementById('clases-list').innerHTML = clases.map(c => {
-    const h = db.hijos.find(x => x.id === c.hijo_id);
+    const h = hijos.find(x => x.id === c.hijo_id);
     return `<div class="card" style="margin-bottom:10px;padding:14px">
       <div class="flex" style="margin-bottom:8px">
         <span class="badge ${c.dictada ? 'badge-green' : 'badge-red'}">${c.dictada ? '✓ Dictada' : '✗ No dictada'}</span>
@@ -732,79 +722,71 @@ function renderClases() {
   }).join('');
 }
 
-function eliminarClase(id) {
+async function eliminarClase(id) {
   if (!confirm('¿Eliminar este registro de clase?')) return;
-  const db = getDB();
-  db.clases = db.clases.filter(c => c.id !== id);
-  saveDB(db);
+  await sbDel('clases', `id=eq.${id}`);
   renderClases();
 }
 
 // ── NOTAS ─────────────────────────────────────────────────────────────────
-function populateCursoSelects() {
-  const db = getDB();
-  const hijoOpts = '<option value="">Seleccionar</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-  const cursoOpts = '<option value="">Seleccionar</option>' + db.cursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
-  document.getElementById('n-hijo').innerHTML = hijoOpts;
-  document.getElementById('n-curso').innerHTML = cursoOpts;
-  document.getElementById('n-filtro').innerHTML = '<option value="">Todos</option>' + db.hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-  renderCursos();
+async function populateCursoSelects() {
+  const [hijos, cursos] = await Promise.all([sbGet('hijos'), sbGet('cursos')]);
+  document.getElementById('n-hijo').innerHTML = '<option value="">Seleccionar</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  document.getElementById('n-curso').innerHTML = '<option value="">Seleccionar</option>' + cursos.map(c => `<option value="${c.id}">${c.nombre}</option>`).join('');
+  document.getElementById('n-filtro').innerHTML = '<option value="">Todos</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  renderCursos(cursos);
 }
 
-function crearCurso() {
+async function crearCurso() {
   const nombre = document.getElementById('curso-nombre').value.trim();
   if (!nombre) return;
-  const db = getDB();
-  if (db.cursos.find(c => c.nombre.toLowerCase() === nombre.toLowerCase())) return alert('Curso ya existe');
-  db.cursos.push({ id: uid(), nombre });
-  saveDB(db);
+  const existing = await sbGet('cursos');
+  if (existing.find(c => c.nombre.toLowerCase() === nombre.toLowerCase())) return alert('Curso ya existe');
+  await sbPost('cursos', { id: uid(), nombre });
   document.getElementById('curso-nombre').value = '';
   populateCursoSelects();
 }
 
-function renderCursos() {
-  const db = getDB();
-  document.getElementById('cursos-list').innerHTML = !db.cursos.length ? '<div class="empty">Sin cursos</div>' :
-    db.cursos.map(c => `<div class="flex" style="margin-bottom:6px">
+function renderCursos(cursos) {
+  document.getElementById('cursos-list').innerHTML = !cursos.length ? '<div class="empty">Sin cursos</div>' :
+    cursos.map(c => `<div class="flex" style="margin-bottom:6px">
       <span style="flex:1;font-size:13px">${c.nombre}</span>
       <button class="btn btn-danger btn-sm" onclick="eliminarCurso('${c.id}')">✕</button>
     </div>`).join('');
 }
 
-function eliminarCurso(id) {
+async function eliminarCurso(id) {
   if (!confirm('¿Eliminar curso?')) return;
-  const db = getDB();
-  db.cursos = db.cursos.filter(c => c.id !== id);
-  db.notas = db.notas.filter(n => n.curso_id !== id);
-  saveDB(db);
+  await sbDel('notas', `curso_id=eq.${id}`);
+  await sbDel('cursos', `id=eq.${id}`);
   populateCursoSelects();
 }
 
-function asignarNota() {
+async function asignarNota() {
   const hijoId = document.getElementById('n-hijo').value;
   const cursoId = document.getElementById('n-curso').value;
   const valor = parseFloat(document.getElementById('n-valor').value);
   const periodo = document.getElementById('n-periodo').value.trim();
   if (!hijoId || !cursoId || isNaN(valor)) return alert('Completa todos los campos');
-  const db = getDB();
-  db.notas.push({ id: uid(), hijo_id: hijoId, curso_id: cursoId, valor, periodo, fecha: new Date().toISOString().slice(0,10) });
-  saveDB(db);
+  await sbPost('notas', {
+    id: uid(), hijo_id: hijoId, curso_id: cursoId, valor, periodo,
+    fecha: new Date().toISOString().slice(0,10)
+  });
   document.getElementById('n-valor').value = '';
   renderNotas();
 }
 
-function renderNotas() {
-  const db = getDB();
+async function renderNotas() {
   const filtro = document.getElementById('n-filtro')?.value || '';
-  let notas = [...db.notas].sort((a,b) => b.fecha.localeCompare(a.fecha));
-  if (filtro) notas = notas.filter(n => n.hijo_id === filtro);
+  const q = filtro ? `hijo_id=eq.${filtro}&order=fecha.desc` : 'order=fecha.desc';
+  const [notas, hijos, cursos] = await Promise.all([sbGet('notas', q), sbGet('hijos'), sbGet('cursos')]);
   if (!notas.length) { document.getElementById('notas-list').innerHTML = '<div class="empty">Sin notas registradas</div>'; return; }
   document.getElementById('notas-list').innerHTML = `
     <table class="tbl">
       <thead><tr><th>Alumno</th><th>Curso</th><th>Nota</th><th>Período</th><th></th></tr></thead>
       <tbody>${notas.map(n => {
-        const h = db.hijos.find(x => x.id === n.hijo_id);
-        const c = db.cursos.find(x => x.id === n.curso_id);
+        const h = hijos.find(x => x.id === n.hijo_id);
+        const c = cursos.find(x => x.id === n.curso_id);
         const color = n.valor >= 14 ? 'badge-green' : n.valor >= 11 ? 'badge-yellow' : 'badge-red';
         return `<tr><td>${h?.nombre || '—'}</td><td>${c?.nombre || '—'}</td>
           <td><span class="badge ${color}">${n.valor}/20</span></td>
@@ -814,17 +796,19 @@ function renderNotas() {
     </table>`;
 }
 
-function eliminarNota(id) {
+async function eliminarNota(id) {
   if (!confirm('¿Eliminar nota?')) return;
-  const db = getDB();
-  db.notas = db.notas.filter(n => n.id !== id);
-  saveDB(db);
+  await sbDel('notas', `id=eq.${id}`);
   renderNotas();
 }
 
 // ── DATOS ─────────────────────────────────────────────────────────────────
-function exportarDB() {
-  const data = localStorage.getItem(DB_KEY) || '{}';
+async function exportarDB() {
+  const [padres, hijos, horarios_asignados, cursos, clases, notas] = await Promise.all([
+    sbGet('padres'), sbGet('hijos'), sbGet('horarios_asignados'),
+    sbGet('cursos'), sbGet('clases'), sbGet('notas')
+  ]);
+  const data = JSON.stringify({ padres, hijos, horarios_asignados, cursos, clases, notas }, null, 2);
   const blob = new Blob([data], {type:'application/json'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -832,18 +816,33 @@ function exportarDB() {
   a.click();
 }
 
-function importarDB() {
+async function importarDB() {
   const file = document.getElementById('import-file').files[0];
   if (!file) return alert('Selecciona un archivo JSON');
   if (!confirm('¿Reemplazar TODOS los datos actuales con el archivo seleccionado?')) return;
   const reader = new FileReader();
-  reader.onload = e => {
+  reader.onload = async e => {
     try {
-      JSON.parse(e.target.result);
-      localStorage.setItem(DB_KEY, e.target.result);
+      const data = JSON.parse(e.target.result);
+      // Clear all tables first (cascade order)
+      await Promise.all([
+        sbDel('notas','id=not.is.null'),
+        sbDel('clases','id=not.is.null'),
+        sbDel('horarios_asignados','id=not.is.null')
+      ]);
+      await sbDel('hijos','id=not.is.null');
+      await Promise.all([
+        sbDel('padres','id=not.is.null'),
+        sbDel('cursos','id=not.is.null')
+      ]);
+      // Insert all records
+      const tables = ['padres','hijos','horarios_asignados','cursos','clases','notas'];
+      for (const t of tables) {
+        if (data[t]?.length) await sbPost(t, data[t]);
+      }
       alert('Datos importados correctamente');
       location.reload();
-    } catch { alert('Archivo JSON inválido'); }
+    } catch(err) { alert('Archivo JSON inválido: ' + err.message); }
   };
   reader.readAsText(file);
 }

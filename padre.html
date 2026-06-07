@@ -189,35 +189,34 @@
 </div>
 
 <script>
-const DB_KEY = 'rothbard_db';
+// ── SUPABASE CONFIG ───────────────────────────────────────────────────────
+const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
+const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json','Prefer':'return=representation'};
+const uid = () => Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+const sbGet   = (t,q='') => fetch(`${SB}/${t}?${q}`,{headers:H}).then(r=>r.json());
+const sbPost  = (t,b)    => fetch(`${SB}/${t}`,{method:'POST',headers:H,body:JSON.stringify(b)}).then(r=>r.json());
+const sbDel   = (t,q)    => fetch(`${SB}/${t}?${q}`,{method:'DELETE',headers:H});
+const sbPatch = (t,q,b)  => fetch(`${SB}/${t}?${q}`,{method:'PATCH',headers:H,body:JSON.stringify(b)}).then(r=>r.json());
+
+// ── CONSTANTS ─────────────────────────────────────────────────────────────
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
 const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
 const WA = '51994240515';
 
-function getDB() {
-  const def = { padres:[], hijos:[], cursos:[], horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]}, horarios_asignados:[], clases:[], notas:[] };
-  try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
-  catch { return def; }
-}
-
-// AUTH
+// ── AUTH ─────────────────────────────────────────────────────────────────
 const auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
 if (!auth || auth.type !== 'padre') { location.href = 'index.html'; }
 
-const db = getDB();
-const padre = db.padres.find(p => p.id === auth.id);
-if (!padre) { location.href = 'index.html'; }
-
-document.getElementById('hd-nombre').textContent = padre.nombre;
-const misHijos = db.hijos.filter(h => h.padre_id === padre.id);
-
-let hijoActivo = misHijos[0]?.id || null;
+let padre = null;
+let misHijos = [];
+let hijoActivo = null;
 let pendingSlot = null;
 
 function logout() { sessionStorage.clear(); location.href = 'index.html'; }
 
-// HIJO TABS
+// ── HIJO TABS ─────────────────────────────────────────────────────────────
 function renderHijoTabs() {
   document.getElementById('hijo-bar').innerHTML = misHijos.map(h =>
     `<div class="hijo-tab ${h.id === hijoActivo ? 'on' : ''}" onclick="selectHijo('${h.id}')">${h.nombre}</div>`
@@ -230,7 +229,7 @@ function selectHijo(id) {
   renderCurrentSec();
 }
 
-// SECTION NAV
+// ── SECTION NAV ───────────────────────────────────────────────────────────
 let currentSec = 'horario';
 function showSec(id, el) {
   document.querySelectorAll('.sec').forEach(s => s.style.display = 'none');
@@ -247,11 +246,11 @@ function renderCurrentSec() {
   if (currentSec === 'notas') renderNotas();
 }
 
-// HORARIO
-function renderHorario() {
-  const db = getDB();
-  const ha = db.horarios_asignados;
-  const misAsig = ha.filter(a => a.activo && a.hijo_id === hijoActivo);
+// ── HORARIO ───────────────────────────────────────────────────────────────
+async function renderHorario() {
+  const ha = await sbGet('horarios_asignados','activo=eq.true');
+  const misAsig = ha.filter(a => a.hijo_id === hijoActivo);
+  const hijo = misHijos.find(h => h.id === hijoActivo);
 
   // Mi horario
   if (!misAsig.length) {
@@ -268,13 +267,12 @@ function renderHorario() {
   }
 
   // Matriz
-  const hijo = db.hijos.find(h => h.id === hijoActivo);
   let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
   HOURS.forEach(h => {
     html += `<tr><td class="hour-lbl">${h}</td>`;
     DAYS.forEach(day => {
       const miAsig   = misAsig.find(a => a.dia === day && a.hora === h);
-      const otroAsig = !miAsig && ha.find(a => a.activo && a.dia === day && a.hora === h);
+      const otroAsig = !miAsig && ha.find(a => a.dia === day && a.hora === h);
       if (miAsig) {
         html += `<td class="cell-mine">${hijo?.nombre.split(' ')[0] || '✓'}</td>`;
       } else if (otroAsig) {
@@ -302,17 +300,16 @@ function solicitarSlot(day, hour) {
 function enviarSolicitud() {
   const hijoId = document.getElementById('sol-hijo').value;
   if (!hijoId) return alert('Selecciona un hijo');
-  const hijo = db.hijos.find(h => h.id === hijoId);
+  const hijo = misHijos.find(h => h.id === hijoId);
   const msg = encodeURIComponent(`Hola profesor, soy ${padre.nombre}. Quisiera solicitar el horario del día ${pendingSlot.day} a las ${pendingSlot.hour} para mi hijo/a ${hijo?.nombre || ''}. Quedo pendiente de su confirmación.`);
   window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
   closeModal();
 }
 
-// CLASES
-function renderClases() {
-  const db = getDB();
-  const clases = db.clases.filter(c => c.hijo_id === hijoActivo).sort((a,b) => b.fecha.localeCompare(a.fecha));
-  const hijo = db.hijos.find(h => h.id === hijoActivo);
+// ── CLASES ────────────────────────────────────────────────────────────────
+async function renderClases() {
+  const clases = await sbGet('clases', `hijo_id=eq.${hijoActivo}&order=fecha.desc`);
+  const hijo = misHijos.find(h => h.id === hijoActivo);
   document.getElementById('clases-title').textContent = `Clases — ${hijo?.nombre || ''}`;
   const dictadas = clases.filter(c => c.dictada).length;
   const conTarea = clases.filter(c => c.tarea).length;
@@ -336,18 +333,20 @@ function renderClases() {
     </div>`).join('');
 }
 
-// NOTAS
-function renderNotas() {
-  const db = getDB();
-  const hijo = db.hijos.find(h => h.id === hijoActivo);
+// ── NOTAS ─────────────────────────────────────────────────────────────────
+async function renderNotas() {
+  const hijo = misHijos.find(h => h.id === hijoActivo);
   document.getElementById('notas-title').textContent = `Notas — ${hijo?.nombre || ''}`;
-  const notas = db.notas.filter(n => n.hijo_id === hijoActivo).sort((a,b) => b.fecha.localeCompare(a.fecha));
+  const [notas, cursos] = await Promise.all([
+    sbGet('notas', `hijo_id=eq.${hijoActivo}&order=fecha.desc`),
+    sbGet('cursos')
+  ]);
   if (!notas.length) { document.getElementById('notas-content').innerHTML = '<div class="empty">Sin notas registradas aún</div>'; return; }
   document.getElementById('notas-content').innerHTML = `
     <table class="tbl">
       <thead><tr><th>Curso</th><th>Nota</th><th>Período</th><th>Fecha</th></tr></thead>
       <tbody>${notas.map(n => {
-        const c = db.cursos.find(x => x.id === n.curso_id);
+        const c = cursos.find(x => x.id === n.curso_id);
         const color = n.valor >= 14 ? 'badge-green' : n.valor >= 11 ? 'badge-yellow' : 'badge-red';
         return `<tr>
           <td>${c?.nombre || '—'}</td>
@@ -362,9 +361,17 @@ function renderNotas() {
 function closeModal() { document.getElementById('modal-solicitar').classList.remove('open'); }
 document.getElementById('modal-solicitar').addEventListener('click', e => { if (e.target === document.getElementById('modal-solicitar')) closeModal(); });
 
-// INIT
-renderHijoTabs();
-renderHorario();
+// ── INIT ──────────────────────────────────────────────────────────────────
+(async () => {
+  const padres = await sbGet('padres', `id=eq.${auth.id}`);
+  padre = padres[0];
+  if (!padre) { location.href = 'index.html'; return; }
+  document.getElementById('hd-nombre').textContent = padre.nombre;
+  misHijos = await sbGet('hijos', `padre_id=eq.${padre.id}`);
+  hijoActivo = misHijos[0]?.id || null;
+  renderHijoTabs();
+  renderHorario();
+})();
 </script>
 </body>
 </html>
