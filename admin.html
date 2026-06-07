@@ -92,8 +92,6 @@
     .leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
     /* Global tooltip */
     #cell-tip{display:none;position:fixed;z-index:9999;background:#1A3835;color:#F3EDD8;font-size:12px;padding:8px 12px;border-radius:7px;box-shadow:0 4px 20px rgba(0,0,0,.3);pointer-events:none;max-width:220px;line-height:1.6}
-    /* Print landscape */
-    @media print{@page{size:landscape;margin:10mm}}
 
     /* TABLE */
     .tbl{width:100%;border-collapse:collapse;font-size:13px}
@@ -121,9 +119,12 @@
 
     /* PRINT */
     @media print{
+      @page{size:landscape;margin:10mm}
       .sidebar,.topbar,.no-print{display:none!important}
       .main{margin-left:0}
       .content{padding:0}
+      /* ocultar todo el contenido de la seccion horario excepto el area imprimible */
+      #sec-horario .card{display:none!important}
       .print-area{display:block!important}
     }
     .print-area{display:none}
@@ -601,25 +602,39 @@ function renderAsignados() {
 function printHorario() {
   const db = getDB();
   const activos = db.horarios_asignados.filter(a => a.activo);
-  // Landscape: rows = days, columns = hours
-  const thStyle = 'padding:7px 8px;background:#1A3835;color:#F3EDD8;font-size:11px;white-space:nowrap';
+
+  // Calcular rango de días con actividad
+  const diasActivos = DAYS.filter(d =>
+    (db.horario_disponible[d] || []).length > 0 || activos.some(a => a.dia === d)
+  );
+  const subtitulo = diasActivos.length >= 2
+    ? `Horario disponible de ${diasActivos[0]} a ${diasActivos[diasActivos.length - 1]}`
+    : diasActivos.length === 1 ? `Horario disponible: ${diasActivos[0]}` : 'Horario semanal';
+
+  const thStyle = 'padding:7px 8px;background:#1A3835;color:#F3EDD8;font-size:11px;white-space:nowrap;border:1px solid #0d2220';
   const tdStyle = 'padding:7px 8px;text-align:center;border:1px solid #ddd;font-size:12px;white-space:nowrap;min-width:56px';
-  const tdLbl  = 'padding:7px 10px;font-weight:600;background:#f5f5f3;white-space:nowrap;font-size:12px;border:1px solid #ddd';
+  const tdLbl   = 'padding:7px 10px;font-weight:600;background:#f5f5f3;white-space:nowrap;font-size:12px;border:1px solid #ddd';
   let rows = '';
   DAYS.forEach(day => {
     let row = `<tr><td style="${tdLbl}">${day}</td>`;
     HOURS.forEach(h => {
-      const asig = activos.find(a => a.dia === day && a.hora === h);
-      const hijo = asig ? db.hijos.find(x => x.id === asig.hijo_id) : null;
-      const bg = hijo ? 'background:#ADC9F5;' : '';
+      const avail = (db.horario_disponible[day] || []).includes(h);
+      const asig  = activos.find(a => a.dia === day && a.hora === h);
+      const hijo  = asig ? db.hijos.find(x => x.id === asig.hijo_id) : null;
+      const bg = hijo ? 'background:#ADC9F5;' : avail ? '' : 'background:#FDDEDE;';
       row += `<td style="${tdStyle}${bg}">${hijo ? hijo.nombre.split(' ')[0] : ''}</td>`;
     });
     row += '</tr>';
     rows += row;
   });
-  const html = `<h2 style="font-family:serif;margin-bottom:12px;color:#1A3835">Academia Murray Rothbard — Horario</h2>
+
+  const html = `
+    <div style="font-family:sans-serif;margin-bottom:16px">
+      <h2 style="font-family:Georgia,serif;color:#1A3835;margin:0 0 4px">Academia Murray Rothbard — Horario</h2>
+      <p style="color:#637875;font-size:13px;margin:0">${subtitulo}</p>
+    </div>
     <table style="border-collapse:collapse;font-size:12px;font-family:sans-serif">
-      <thead><tr><th style="${thStyle}">Día \\ Hora</th>${HOURS.map(h=>`<th style="${thStyle}">${h}</th>`).join('')}</tr></thead>
+      <thead><tr><th style="${thStyle}">Día / Hora</th>${HOURS.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   document.getElementById('print-horario').innerHTML = html;
