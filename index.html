@@ -49,7 +49,7 @@
   <p class="lema">Libertas Ex Scientia · Tarapoto</p>
   <div class="card">
     <label>Ingrese su DNI</label>
-    <input type="number" id="dni" maxlength="8" placeholder="00000000" autofocus>
+    <input type="tel" id="dni" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="00000000" autofocus>
     <button onclick="login()">Ingresar</button>
     <p class="error" id="err"></p>
     <div class="divider">¿No estás registrado?</div>
