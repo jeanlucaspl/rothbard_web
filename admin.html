@@ -720,7 +720,8 @@ async function renderClases() {
         <span class="badge ${c.dictada ? 'badge-green' : 'badge-red'}">${c.dictada ? '✓ Dictada' : '✗ No dictada'}</span>
         <span class="badge badge-teal">${c.fecha} ${c.hora}</span>
         <strong style="font-size:13px">${h?.nombre || '—'}</strong>
-        <button class="btn btn-danger btn-sm" style="margin-left:auto" onclick="eliminarClase('${c.id}')">✕</button>
+        <button class="btn btn-outline btn-sm" style="margin-left:auto" onclick="generarReporteClase('${c.id}')">📄 Reporte</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarClase('${c.id}')">✕</button>
       </div>
       ${c.temas ? `<div style="font-size:13px;margin-bottom:4px"><strong>Temas:</strong> ${c.temas}</div>` : ''}
       ${c.tarea ? `<div style="font-size:13px;margin-bottom:4px"><strong>Tarea:</strong> ${c.tarea}</div>` : ''}
@@ -734,6 +735,88 @@ async function eliminarClase(id) {
   if (!confirm('¿Eliminar este registro de clase?')) return;
   await sbDel('clases', `id=${eq(id)}`);
   renderClases();
+}
+
+async function generarReporteClase(claseId) {
+  const [clases, hijos, padres] = await Promise.all([
+    sbGet('clases', `id=eq.${claseId}`),
+    sbGet('hijos'),
+    sbGet('padres')
+  ]);
+  const c = clases[0];
+  if (!c) return alert('No se encontró la clase');
+  const hijo = hijos.find(x => x.id === c.hijo_id);
+  const padre = hijo ? padres.find(p => p.id === hijo.padre_id) : null;
+  const logoSrc = document.querySelector('.sb-logo img').src;
+  const fechaGen = new Date().toLocaleDateString('es-PE', {day:'2-digit', month:'long', year:'numeric'});
+
+  const html = `<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Informe de Clase — ${hijo?.nombre || ''}</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  @page{size:A4;margin:20mm}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',sans-serif;color:#1C2B29;background:#fff;padding:0}
+  .header{display:flex;align-items:center;gap:20px;padding-bottom:16px;border-bottom:2.5px solid #2D5A56;margin-bottom:24px}
+  .logo{width:72px;height:72px;object-fit:contain}
+  .header-text h1{font-family:'Playfair Display',serif;font-size:20px;color:#1A3835}
+  .header-text p{font-size:11px;color:#637875;letter-spacing:.1em;text-transform:uppercase;margin-top:3px}
+  h2{font-family:'Playfair Display',serif;font-size:17px;color:#1A3835;margin-bottom:18px;padding-bottom:8px;border-bottom:1px solid rgba(45,90,86,.2)}
+  .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 32px;margin-bottom:22px}
+  .info-row .lbl{font-size:10px;font-weight:600;color:#637875;text-transform:uppercase;letter-spacing:.08em}
+  .info-row .val{font-size:13px;color:#1C2B29;margin-top:2px}
+  .section{margin-bottom:18px}
+  .section-title{font-size:10px;font-weight:600;color:#637875;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px}
+  .box{background:#F3EDD8;border-radius:7px;padding:12px 14px;font-size:13px;line-height:1.7;color:#1C2B29}
+  .badge{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600}
+  .badge-green{background:rgba(58,158,117,.15);color:#2e8060}
+  .badge-red{background:rgba(192,57,43,.12);color:#C0392B}
+  .footer{margin-top:48px;padding-top:16px;border-top:1px solid rgba(45,90,86,.2);display:flex;justify-content:space-between;align-items:flex-end}
+  .firma{font-size:12px;color:#637875;text-align:center}
+  .firma-line{width:180px;border-top:1px solid #8a9e9c;margin:0 auto 6px}
+  .meta{font-size:11px;color:#637875;text-align:right;line-height:1.6}
+  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+</head>
+<body>
+<div class="header">
+  <img class="logo" src="${logoSrc}" alt="Logo">
+  <div class="header-text">
+    <h1>Academia Murray Rothbard</h1>
+    <p>Libertas Ex Scientia &middot; Tarapoto</p>
+  </div>
+</div>
+<h2>Informe de Clase</h2>
+<div class="info-grid">
+  <div class="info-row"><div class="lbl">Alumno</div><div class="val">${hijo?.nombre || '—'}</div></div>
+  <div class="info-row"><div class="lbl">Grado / Nivel</div><div class="val">${hijo?.grado || '—'}</div></div>
+  <div class="info-row"><div class="lbl">Apoderado</div><div class="val">${padre?.nombre || '—'}</div></div>
+  <div class="info-row"><div class="lbl">Contacto</div><div class="val">${padre?.telefono || '—'}</div></div>
+  <div class="info-row"><div class="lbl">Fecha</div><div class="val">${c.fecha}</div></div>
+  <div class="info-row"><div class="lbl">Hora</div><div class="val">${c.hora}</div></div>
+</div>
+<div class="section">
+  <div class="section-title">Estado</div>
+  <span class="badge ${c.dictada ? 'badge-green' : 'badge-red'}">${c.dictada ? '✓ Clase dictada' : '✗ Clase no dictada'}</span>
+</div>
+${c.temas ? `<div class="section"><div class="section-title">Temas tratados</div><div class="box">${c.temas}</div></div>` : ''}
+${c.tarea ? `<div class="section"><div class="section-title">Tarea asignada</div><div class="box">${c.tarea}</div></div>` : ''}
+${c.hubo_examen ? `<div class="section"><div class="section-title">Examen</div><div class="box">Resultado: <strong>${c.resultado_examen || 'Sin resultado registrado'}</strong></div></div>` : ''}
+${c.observaciones ? `<div class="section"><div class="section-title">Observaciones</div><div class="box">${c.observaciones}</div></div>` : ''}
+<div class="footer">
+  <div class="firma"><div class="firma-line"></div>Firma del docente</div>
+  <div class="meta">Academia Murray Rothbard<br>Generado el ${fechaGen}</div>
+</div>
+<script>window.onload=()=>window.print()<\/script>
+</body>
+</html>`;
+
+  const w = window.open('', '_blank');
+  w.document.write(html);
+  w.document.close();
 }
 
 // ── NOTAS ─────────────────────────────────────────────────────────────────
