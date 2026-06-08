@@ -78,7 +78,7 @@
     .matrix-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
     table.matrix{border-collapse:collapse;width:100%;min-width:560px;background:var(--white)}
     table.matrix th{background:var(--teal-dark);color:var(--cream);font-size:12px;font-weight:600;letter-spacing:.08em;padding:10px 6px;text-align:center}
-    table.matrix th:first-child{width:64px}
+    table.matrix th:first-child{width:110px}
     table.matrix td{border:1px solid var(--border);padding:0;height:38px;text-align:center;font-size:11px;transition:all .15s}
     td.hour-lbl{font-size:11px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream);white-space:nowrap}
     td.cell-on{background:#FAFAF8;cursor:pointer;border:1px solid var(--border)}
@@ -430,6 +430,12 @@ const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
 const WA = '+51994240515';
 
+function fmtHora(h) {
+  const hh = parseInt(h);
+  const fmt = n => n < 12 ? `${n} am` : n === 12 ? '12 pm' : `${n - 12} pm`;
+  return `${fmt(hh)} - ${fmt(hh + 1)}`;
+}
+
 // ── AUTH ─────────────────────────────────────────────────────────────────
 const auth = JSON.parse(sessionStorage.getItem('auth') || 'null');
 if (!auth || auth.type !== 'admin') location.href = 'index.html';
@@ -473,7 +479,7 @@ async function renderPanel() {
   const html = asigHoy.length ? asigHoy.map(a => {
     const h = hijos.find(x => x.id === a.hijo_id);
     return `<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
-      <span class="badge badge-teal">${a.hora}</span>
+      <span class="badge badge-teal">${fmtHora(a.hora)}</span>
       <span>${h ? h.nombre : '—'}</span>
       <span class="text-muted">${diaHoy}</span>
     </div>`;
@@ -492,7 +498,7 @@ async function renderMatrix() {
   ]);
   let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
   HOURS.forEach(h => {
-    html += `<tr><td class="hour-lbl">${h}</td>`;
+    html += `<tr><td class="hour-lbl">${fmtHora(h)}</td>`;
     DAYS.forEach(day => {
       const asig = ha.find(a => a.dia === day && a.hora === h);
       if (asig) {
@@ -567,7 +573,7 @@ async function renderAsignados() {
       <thead><tr><th>Día</th><th>Hora</th><th>Alumno</th><th>Desde</th></tr></thead>
       <tbody>${ordenados.map(a => {
         const h = hijos.find(x => x.id === a.hijo_id);
-        return `<tr><td>${a.dia}</td><td><span class="badge badge-teal">${a.hora}</span></td><td>${h?.nombre || '—'}</td><td>${a.fecha_inicio || '—'}</td></tr>`;
+        return `<tr><td>${a.dia}</td><td><span class="badge badge-teal">${fmtHora(a.hora)}</span></td><td>${h?.nombre || '—'}</td><td>${a.fecha_inicio || '—'}</td></tr>`;
       }).join('')}</tbody>
     </table>`;
 }
