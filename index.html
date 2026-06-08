@@ -73,21 +73,11 @@
 </div>
 <script>
   const ADMIN_DNI = '48240305';
-  const DB_KEY = 'rothbard_db';
-  const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
-  const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+  const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
+  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
+  const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'};
 
-  function getDB() {
-    const def = {
-      padres:[], hijos:[], cursos:[],
-      horario_disponible:{Lunes:[],Martes:[],Miércoles:[],Jueves:[],Viernes:[],Sábado:[],Domingo:[]},
-      horarios_asignados:[], clases:[], notas:[]
-    };
-    try { return Object.assign(def, JSON.parse(localStorage.getItem(DB_KEY)) || {}); }
-    catch { return def; }
-  }
-
-  function login() {
+  async function login() {
     const dni = String(document.getElementById('dni').value).trim();
     if (!dni) return;
     if (dni === ADMIN_DNI) {
@@ -95,14 +85,25 @@
       location.href = 'admin.html';
       return;
     }
-    const db = getDB();
-    const padre = db.padres.find(p => p.dni === dni);
-    if (padre) {
-      sessionStorage.setItem('auth', JSON.stringify({type:'padre', id:padre.id}));
-      location.href = 'padre.html';
-      return;
+    document.getElementById('err').textContent = '';
+    const btn = document.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
+    try {
+      const res = await fetch(`${SB}/padres?dni=eq.${encodeURIComponent(dni)}`, {headers:H});
+      const padres = await res.json();
+      if (padres.length) {
+        sessionStorage.setItem('auth', JSON.stringify({type:'padre', id:padres[0].id}));
+        location.href = 'padre.html';
+      } else {
+        document.getElementById('err').textContent = 'DNI no encontrado. Consulte con el profesor.';
+      }
+    } catch {
+      document.getElementById('err').textContent = 'Error de conexión. Intente nuevamente.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Ingresar';
     }
-    document.getElementById('err').textContent = 'DNI no encontrado. Consulte con el profesor.';
   }
 
   document.getElementById('dni').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
