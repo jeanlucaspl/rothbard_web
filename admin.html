@@ -692,7 +692,7 @@ async function registrarClase() {
   const horaFin = document.getElementById('cl-hora-fin').value;
   if (!hijoId || !fecha || !horaIni || !horaFin) return alert('Completa alumno, fecha y rango de hora');
   const hora = horaIni === horaFin ? horaIni : `${horaIni} - ${horaFin}`;
-  await sbPost('clases', {
+  const nuevaClase = {
     id: uid(),
     hijo_id: hijoId,
     fecha, hora,
@@ -703,9 +703,17 @@ async function registrarClase() {
     hubo_examen: document.getElementById('cl-examen').value === '1',
     resultado_examen: document.getElementById('cl-resultado').value.trim(),
     observaciones: document.getElementById('cl-obs').value.trim()
-  });
+  };
+  const res = await sbPost('clases', nuevaClase);
+  // Detectar error de Supabase
+  const err = Array.isArray(res) ? res[0] : res;
+  if (err?.code || err?.error || err?.message?.includes('error')) {
+    return alert('Error al guardar en Supabase:\n' + (err.message || JSON.stringify(err)));
+  }
   ['cl-temas','cl-tarea','cl-resultado','cl-obs'].forEach(id => document.getElementById(id).value = '');
   renderClases();
+  // Generar PDF automáticamente después de guardar
+  generarReporteClase(nuevaClase.id);
 }
 
 async function renderClases() {
