@@ -3,135 +3,495 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Academia Murray Rothbard — Acceso</title>
+  <title>Academia Murray Rothbard — Clases particulares en Tarapoto</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --teal:#2D5A56;--teal-dark:#1A3835;--teal-light:#4A8078;
+      --teal:#2D5A56;--teal-dark:#1A3835;--teal-light:#4A8078;--teal-pale:#EBF4F3;
       --cream:#F3EDD8;--cream-dark:#E4D9B4;
       --text:#1C2B29;--muted:#637875;
       --white:#FAFAF8;--border:rgba(45,90,86,.15);
+      --green:#3A9E75;
     }
-    body{background:var(--cream);color:var(--text);font-family:'Inter',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:16px}
-    .wrap{width:100%;max-width:420px;text-align:center}
-    .logo{width:min(280px,70vw);height:min(280px,70vw);object-fit:contain;margin:0 auto 16px;filter:drop-shadow(0 4px 20px rgba(45,90,86,.25))}
-    h1{font-family:'Playfair Display',serif;font-size:clamp(18px,5vw,24px);color:var(--teal-dark);margin-bottom:4px}
-    .lema{font-size:clamp(10px,2.8vw,12px);letter-spacing:.15em;text-transform:uppercase;color:var(--muted);margin-bottom:24px}
-    .card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:clamp(20px,6vw,32px);box-shadow:0 4px 24px rgba(45,90,86,.08)}
-    label{display:block;font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;text-align:left}
-    input{width:100%;padding:clamp(11px,3vw,14px) 16px;border:1.5px solid var(--border);border-radius:8px;font-size:clamp(16px,4.5vw,18px);font-family:'Inter',sans-serif;letter-spacing:.2em;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;text-align:center}
-    input:focus{border-color:var(--teal)}
-    button{width:100%;margin-top:14px;padding:clamp(12px,3.5vw,14px);background:var(--teal);color:var(--white);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:clamp(14px,4vw,15px);font-weight:600;cursor:pointer;letter-spacing:.04em;transition:background .2s}
-    button:hover{background:var(--teal-dark)}
-    .error{margin-top:12px;font-size:13px;color:#C0392B;min-height:18px}
-    .btn-wa{width:100%;margin-top:10px;padding:clamp(11px,3vw,13px);background:#25D366;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:clamp(13px,3.8vw,14px);font-weight:600;cursor:pointer;letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .2s}
+    html{scroll-behavior:smooth}
+    body{background:var(--cream);color:var(--text);font-family:'Inter',sans-serif;line-height:1.6}
+
+    /* NAV */
+    nav{position:sticky;top:0;z-index:100;background:var(--teal-dark);padding:12px 24px;display:flex;align-items:center;justify-content:space-between}
+    .nav-brand{display:flex;align-items:center;gap:10px}
+    .nav-brand img{width:36px;height:36px;object-fit:contain}
+    .nav-brand span{font-family:'Playfair Display',serif;font-size:14px;color:var(--cream)}
+    .nav-acc{background:var(--teal-light);color:var(--cream);border:none;padding:8px 18px;border-radius:7px;font-family:'Inter',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s}
+    .nav-acc:hover{background:var(--teal)}
+
+    /* HERO */
+    .hero{text-align:center;padding:56px 24px 48px;max-width:680px;margin:0 auto}
+    .hero img{width:min(200px,50vw);height:min(200px,50vw);object-fit:contain;margin:0 auto 20px;filter:drop-shadow(0 4px 24px rgba(45,90,86,.25))}
+    .hero h1{font-family:'Playfair Display',serif;font-size:clamp(26px,6vw,42px);color:var(--teal-dark);margin-bottom:6px}
+    .hero-lema{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:20px}
+    .hero-desc{font-size:15px;color:var(--muted);max-width:540px;margin:0 auto 32px;line-height:1.8}
+    .hero-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+    .btn-primary{background:var(--teal);color:var(--white);border:none;padding:13px 28px;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-primary:hover{background:var(--teal-dark)}
+    .btn-wa{background:#25D366;color:#fff;border:none;padding:13px 28px;border-radius:8px;font-family:'Inter',sans-serif;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background .2s}
     .btn-wa:hover{background:#1dbb5a}
+
+    /* COMO FUNCIONA */
+    .section{padding:56px 24px}
+    .section-inner{max-width:900px;margin:0 auto}
+    .sec-label{font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--teal-light);margin-bottom:8px}
+    .sec-title{font-family:'Playfair Display',serif;font-size:clamp(22px,5vw,34px);color:var(--teal-dark);margin-bottom:32px}
+    .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+    .step{background:var(--white);border:1px solid var(--border);border-radius:10px;padding:24px;border-top:3px solid var(--teal)}
+    .step-n{font-family:'Playfair Display',serif;font-size:36px;color:var(--cream-dark);line-height:1;margin-bottom:10px}
+    .step h3{font-size:15px;font-weight:600;color:var(--teal-dark);margin-bottom:6px}
+    .step p{font-size:13px;color:var(--muted);line-height:1.75}
+
+    /* SCHEDULE */
+    .schedule-bg{background:var(--teal-dark);padding:56px 24px}
+    .schedule-inner{max-width:960px;margin:0 auto}
+    .schedule-inner .sec-label{color:rgba(243,237,216,.6)}
+    .schedule-inner .sec-title{color:var(--cream);margin-bottom:10px}
+    .sched-sub{font-size:13px;color:rgba(243,237,216,.6);margin-bottom:28px}
+    .sched-wrap{overflow-x:auto;border-radius:10px}
+    table.sched{border-collapse:collapse;width:100%;min-width:520px;background:var(--white)}
+    table.sched th{background:rgba(0,0,0,.3);color:var(--cream);font-size:11px;font-weight:600;letter-spacing:.07em;padding:9px 6px;text-align:center}
+    table.sched td{border:1px solid var(--border);height:34px;text-align:center;font-size:11px;transition:background .15s}
+    td.hlbl{font-size:10px;font-weight:600;color:var(--muted);padding:0 8px;background:var(--cream-dark);white-space:nowrap;text-align:right}
+    td.c-free{background:var(--white);cursor:pointer;color:var(--teal);font-weight:700;font-size:13px}
+    td.c-free:hover{background:var(--teal-pale)}
+    td.c-taken{background:rgba(45,90,86,.08);color:var(--muted);font-size:10px;letter-spacing:.05em;cursor:default}
+    .legend{display:flex;gap:20px;margin-top:14px;flex-wrap:wrap}
+    .leg{display:flex;align-items:center;gap:7px;font-size:12px;color:rgba(243,237,216,.7)}
+    .leg-dot{width:14px;height:14px;border-radius:3px;flex-shrink:0}
+
+    /* LOGIN */
+    .login-section{padding:56px 24px}
+    .login-wrap{max-width:400px;margin:0 auto;text-align:center}
+    .login-wrap h2{font-family:'Playfair Display',serif;font-size:22px;color:var(--teal-dark);margin-bottom:4px}
+    .login-sub{font-size:13px;color:var(--muted);margin-bottom:24px}
+    .card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:28px;box-shadow:0 4px 24px rgba(45,90,86,.08)}
+    label{display:block;font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;text-align:left}
+    input[type="tel"]{width:100%;padding:13px 16px;border:1.5px solid var(--border);border-radius:8px;font-size:18px;font-family:'Inter',sans-serif;letter-spacing:.2em;color:var(--text);background:var(--cream);outline:none;transition:border-color .2s;text-align:center}
+    input[type="tel"]:focus{border-color:var(--teal)}
+    .btn-login{width:100%;margin-top:14px;padding:13px;background:var(--teal);color:var(--white);border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .2s}
+    .btn-login:hover{background:var(--teal-dark)}
+    .error{margin-top:10px;font-size:13px;color:#C0392B;min-height:18px}
     .divider{display:flex;align-items:center;gap:10px;margin:18px 0;color:var(--muted);font-size:12px}
     .divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border)}
-    .footer{margin-top:20px;font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
-    /* pantallas muy pequeñas (< 360px) */
-    @media(max-width:360px){
-      body{padding:10px}
-      .logo{width:60vw;height:60vw}
-      .card{padding:18px}
+
+    /* FOOTER */
+    footer{background:var(--teal-dark);padding:28px 24px;text-align:center}
+    footer p{font-size:12px;color:rgba(243,237,216,.5);letter-spacing:.08em;text-transform:uppercase}
+
+    @media(max-width:480px){
+      .hero{padding:36px 16px 32px}
+      .section,.schedule-bg,.login-section{padding:40px 16px}
     }
-    /* tablets y pantallas medianas */
-    @media(min-width:480px){
-      .logo{width:260px;height:260px}
+
+    /* ── CHATBOT ── */
+    .chat-btn{position:fixed;bottom:24px;right:24px;z-index:9999;width:56px;height:56px;border-radius:50%;background:var(--teal);border:none;cursor:pointer;box-shadow:0 4px 20px rgba(45,90,86,.35);display:flex;align-items:center;justify-content:center;transition:transform .2s,background .2s}
+    .chat-btn:hover{background:var(--teal-dark);transform:scale(1.08)}
+    .chat-panel{position:fixed;bottom:90px;right:24px;z-index:9998;width:320px;display:flex;flex-direction:column;overflow:hidden;border-radius:16px;box-shadow:0 8px 40px rgba(45,90,86,.22);background:var(--white);transform:translateY(20px) scale(.95);opacity:0;pointer-events:none;transition:transform .22s ease,opacity .22s ease;max-height:500px}
+    .chat-panel.open{transform:translateY(0) scale(1);opacity:1;pointer-events:all}
+    .chat-hdr{background:var(--teal-dark);padding:13px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0}
+    .chat-hdr img{width:28px;height:28px;object-fit:contain;border-radius:50%;background:rgba(255,255,255,.1)}
+    .chat-hdr-info{flex:1}
+    .chat-hdr-info strong{display:block;color:var(--cream);font-size:13px}
+    .chat-hdr-info span{font-size:11px;color:rgba(243,237,216,.55)}
+    .chat-close{background:none;border:none;color:rgba(243,237,216,.6);cursor:pointer;font-size:18px;padding:2px 6px;line-height:1;transition:color .15s}
+    .chat-close:hover{color:var(--cream)}
+    .chat-msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;min-height:120px;max-height:300px}
+    .msg{max-width:86%;font-size:13px;line-height:1.6;padding:9px 13px;border-radius:12px;word-break:break-word}
+    .msg-bot{background:var(--teal-pale);color:var(--text);border-radius:12px 12px 12px 3px;align-self:flex-start}
+    .msg-user{background:var(--teal);color:var(--white);border-radius:12px 12px 3px 12px;align-self:flex-end}
+    .msg-typing{display:flex;gap:4px;align-items:center;padding:10px 14px;border-radius:12px 12px 12px 3px;background:var(--teal-pale);align-self:flex-start}
+    .msg-typing span{width:7px;height:7px;border-radius:50%;background:var(--teal-light);animation:blink 1.2s infinite}
+    .msg-typing span:nth-child(2){animation-delay:.2s}
+    .msg-typing span:nth-child(3){animation-delay:.4s}
+    @keyframes blink{0%,60%,100%{opacity:.25}30%{opacity:1}}
+    .qr-wrap{padding:6px 12px 10px;display:flex;flex-wrap:wrap;gap:6px;flex-shrink:0;border-top:1px solid var(--border)}
+    .qr{background:var(--teal-pale);border:1px solid rgba(45,90,86,.2);color:var(--teal-dark);border-radius:20px;padding:5px 11px;font-size:11px;font-weight:600;cursor:pointer;transition:background .15s,color .15s;white-space:nowrap;font-family:'Inter',sans-serif}
+    .qr:hover{background:var(--teal);color:var(--white);border-color:var(--teal)}
+    .chat-foot{padding:10px 12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-shrink:0;background:var(--white)}
+    .chat-inp{flex:1;border:1.5px solid var(--border);border-radius:8px;padding:8px 12px;font-size:13px;font-family:'Inter',sans-serif;outline:none;transition:border-color .2s;background:var(--cream);color:var(--text)}
+    .chat-inp:focus{border-color:var(--teal)}
+    .chat-send{background:var(--teal);border:none;color:var(--white);border-radius:8px;padding:8px 13px;cursor:pointer;transition:background .2s;display:flex;align-items:center}
+    .chat-send:hover{background:var(--teal-dark)}
+    @media(max-width:480px){
+      .chat-panel{width:calc(100vw - 32px);right:16px;bottom:80px}
+      .chat-btn{bottom:16px;right:16px}
     }
   </style>
 </head>
 <body>
-<div class="wrap">
-  <img src="logo.png" alt="Academia Murray Rothbard" class="logo">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">
+    <img src="logo.png" alt="Logo">
+    <span>Academia Murray Rothbard</span>
+  </div>
+  <button class="nav-acc" onclick="document.getElementById('login').scrollIntoView({behavior:'smooth'})">Acceder</button>
+</nav>
+
+<!-- HERO -->
+<div class="hero">
+  <img src="logo.png" alt="Academia Murray Rothbard">
   <h1>Academia Murray Rothbard</h1>
-  <p class="lema">Libertas Ex Scientia · Tarapoto</p>
-  <div class="card">
-    <label>Ingrese su DNI</label>
-    <input type="tel" id="dni" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="00000000" autofocus>
-    <button onclick="login()">Ingresar</button>
-    <p class="error" id="err"></p>
-    <div class="divider">¿No estás registrado?</div>
+  <p class="hero-lema">Libertas Ex Scientia · Tarapoto</p>
+  <p class="hero-desc">Academia de clases particulares centrada en el pensamiento crítico, la intelectualidad y la excelencia académica. Preparación personalizada, seguimiento continuo y valores de autonomía y disciplina.</p>
+  <div class="hero-btns">
+    <button class="btn-primary" onclick="document.getElementById('horario').scrollIntoView({behavior:'smooth'})">Ver horario disponible</button>
     <button class="btn-wa" onclick="solicitarInfo()">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-      Solicitar información
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+      Consultar por WhatsApp
     </button>
   </div>
-  <p class="footer">© 2026 Academia Murray Rothbard</p>
+</div>
 
-  <!-- Sincronización de datos entre dispositivos -->
-  <div id="sync-panel" style="display:none;margin-top:16px">
-    <div class="card" style="text-align:left">
-      <p style="font-size:13px;font-weight:600;color:var(--teal-dark);margin-bottom:10px">Cargar datos en este dispositivo</p>
-      <p style="font-size:12px;color:var(--muted);margin-bottom:12px">Selecciona el archivo JSON exportado desde el dispositivo principal.</p>
-      <input type="file" id="sync-file" accept=".json" style="font-size:13px;margin-bottom:10px;width:100%">
-      <button onclick="importarSync()" style="margin-top:0">Importar y sincronizar</button>
+<!-- CÓMO FUNCIONA -->
+<div class="section" style="background:var(--white)">
+  <div class="section-inner">
+    <div class="sec-label">Proceso</div>
+    <div class="sec-title">¿Cómo funciona?</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-n">01</div>
+        <h3>Consulta el horario</h3>
+        <p>Revisa los horarios disponibles más abajo. Las celdas en blanco están libres y puedes solicitarlas.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">02</div>
+        <h3>Solicita tu clase</h3>
+        <p>Haz clic en el horario que te interesa y se abrirá WhatsApp con el mensaje listo. Confirmamos y listo.</p>
+      </div>
+      <div class="step">
+        <div class="step-n">03</div>
+        <h3>Accede al portal</h3>
+        <p>Si quieres clases frecuentes, pide tu acceso al portal de padres: consulta notas, horario fijo, tareas y documentos compartidos en tiempo real.</p>
+      </div>
     </div>
   </div>
-  <p style="margin-top:12px;font-size:11px;color:var(--border);cursor:pointer;user-select:none" onclick="toggleSync()">···</p>
 </div>
-<script>
-  const ADMIN_DNI = '48240305';
-  const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
-  const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
-  const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'};
 
-  async function login() {
-    const dni = String(document.getElementById('dni').value).trim();
-    if (!dni) return;
-    if (dni === ADMIN_DNI) {
-      sessionStorage.setItem('auth', JSON.stringify({type:'admin'}));
-      location.href = 'admin.html';
+<!-- HORARIO PÚBLICO -->
+<div class="schedule-bg" id="horario">
+  <div class="schedule-inner">
+    <div class="sec-label">Esta semana</div>
+    <div class="sec-title">Horario disponible</div>
+    <p class="sched-sub">Haz clic en cualquier celda verde para solicitar esa hora por WhatsApp.</p>
+    <div class="sched-wrap">
+      <table class="sched" id="schedule-table">
+        <tbody><tr><td colspan="7" style="padding:20px;text-align:center;color:var(--muted);font-size:13px">Cargando horario…</td></tr></tbody>
+      </table>
+    </div>
+    <div class="legend">
+      <div class="leg"><div class="leg-dot" style="background:var(--white);border:1px solid rgba(45,90,86,.3)"></div> Disponible — clic para solicitar</div>
+      <div class="leg"><div class="leg-dot" style="background:rgba(45,90,86,.08)"></div> Ocupado</div>
+    </div>
+  </div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-section" id="login">
+  <div class="login-wrap">
+    <h2>Acceso al portal</h2>
+    <p class="login-sub">Para padres y apoderados con cuenta registrada</p>
+    <div class="card">
+      <label>Ingrese su DNI</label>
+      <input type="tel" id="dni" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="00000000">
+      <button class="btn-login" onclick="login()">Ingresar</button>
+      <p class="error" id="err"></p>
+      <div class="divider">¿No tienes cuenta?</div>
+      <button class="btn-wa" style="width:100%;justify-content:center" onclick="solicitarCuenta()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Solicitar acceso al portal
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CHATBOT WIDGET -->
+<button class="chat-btn" id="chat-toggle" onclick="toggleChat()" title="Asistente">
+  <svg id="ci-open" width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
+  <svg id="ci-close" width="22" height="22" fill="white" viewBox="0 0 24 24" style="display:none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+</button>
+<div class="chat-panel" id="chat-panel">
+  <div class="chat-hdr">
+    <img src="logo.png" alt="">
+    <div class="chat-hdr-info">
+      <strong>Asistente Rothbard</strong>
+      <span>Responde al instante</span>
+    </div>
+    <button class="chat-close" onclick="toggleChat()">✕</button>
+  </div>
+  <div class="chat-msgs" id="chat-msgs"></div>
+  <div class="qr-wrap" id="qr-wrap"></div>
+  <div class="chat-foot">
+    <input class="chat-inp" id="chat-inp" type="text" placeholder="Escribe tu consulta…" autocomplete="off">
+    <button class="chat-send" onclick="chatSend()">
+      <svg width="15" height="15" fill="white" viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <p>© 2026 Academia Murray Rothbard · Tarapoto, Perú</p>
+</footer>
+
+<script>
+const ADMIN_DNI = '48240305';
+const SB  = 'https://pfwtrdfikkmknhrueeuj.supabase.co/rest/v1';
+const KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBmd3RyZGZpa2tta25ocnVlZXVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA4MDU3NzksImV4cCI6MjA5NjM4MTc3OX0.jo00QI8lTGqamb2kelS4Kf5ts9sLI6eMAC8I6mRNrfg';
+const H   = {apikey:KEY,'Authorization':'Bearer '+KEY,'Content-Type':'application/json'};
+const WA  = '51994240515';
+
+const DAYS   = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb'];
+const HOURS  = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
+
+function fmtHora(h) {
+  const hh = parseInt(h);
+  const f = n => n < 12 ? `${n}am` : n === 12 ? '12pm' : `${n-12}pm`;
+  return `${f(hh)}–${f(hh+1)}`;
+}
+
+// ── HORARIO PÚBLICO ──────────────────────────────────────────────────────
+async function loadSchedule() {
+  try {
+    const res = await fetch(`${SB}/horarios_asignados?activo=eq.true`, {headers: H});
+    const taken = await res.json();
+    renderSchedule(Array.isArray(taken) ? taken : []);
+  } catch { renderSchedule([]); }
+}
+
+function renderSchedule(taken) {
+  let html = '<thead><tr><th></th>' + DAYS_S.map(d => `<th>${d}</th>`).join('') + '</tr></thead><tbody>';
+  HOURS.forEach(h => {
+    html += `<tr><td class="hlbl">${fmtHora(h)}</td>`;
+    DAYS.forEach(day => {
+      if (taken.some(a => a.dia === day && a.hora === h)) {
+        html += `<td class="c-taken">Ocupado</td>`;
+      } else {
+        const msg = encodeURIComponent(`Hola, quisiera solicitar una clase el ${day} a las ${h}. ¿Está disponible?`);
+        html += `<td class="c-free" onclick="window.open('https://wa.me/${WA}?text=${msg}','_blank')" title="Solicitar este horario">✓</td>`;
+      }
+    });
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  document.getElementById('schedule-table').innerHTML = html;
+}
+
+// ── LOGIN ────────────────────────────────────────────────────────────────
+async function login() {
+  const dni = document.getElementById('dni').value.trim();
+  if (!dni) return;
+  if (dni === ADMIN_DNI) {
+    sessionStorage.setItem('auth', JSON.stringify({type:'admin'}));
+    location.href = 'admin.html';
+    return;
+  }
+  const btn = document.querySelector('.btn-login');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  document.getElementById('err').textContent = '';
+  try {
+    const res = await fetch(`${SB}/padres?dni=eq.${encodeURIComponent(dni)}`, {headers:H});
+    const padres = await res.json();
+    if (padres.length) {
+      sessionStorage.setItem('auth', JSON.stringify({type:'padre', id:padres[0].id}));
+      location.href = 'padre.html';
+    } else {
+      document.getElementById('err').textContent = 'DNI no encontrado. Consulta con el profesor.';
+    }
+  } catch {
+    document.getElementById('err').textContent = 'Error de conexión. Intenta nuevamente.';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Ingresar';
+  }
+}
+
+document.getElementById('dni').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+function solicitarInfo() {
+  const msg = encodeURIComponent('Hola, me interesa obtener información sobre la Academia Murray Rothbard. ¿Me podría brindar más detalles sobre los cursos y horarios disponibles?');
+  window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
+}
+
+function solicitarCuenta() {
+  const msg = encodeURIComponent('Hola, me gustaría obtener acceso al portal de padres de la Academia Murray Rothbard para hacer seguimiento a mi hijo/a.');
+  window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
+}
+
+// ── CHATBOT ─────────────────────────────────────────────────────────────
+let _chatOpen = false, _chatInited = false;
+
+const QR_MENU = [
+  {label:'📅 Horario disponible', q:'horario'},
+  {label:'⚙️ ¿Cómo funciona?',    q:'como funciona'},
+  {label:'📍 Ubicación',           q:'ubicacion'},
+  {label:'💰 Costos',              q:'costos'},
+  {label:'🔑 Portal de padres',    q:'portal de padres'},
+  {label:'📋 Reportes de clases',  q:'reportes'},
+];
+
+const BOT_RULES = [
+  { keys:['horario','disponib','que hora','qué hora','cuando','cuándo','libre'],
+    fn: async () => {
+      try {
+        const r = await fetch(`${SB}/horarios_asignados?activo=eq.true`,{headers:H});
+        const taken = await r.json();
+        const ts = new Set((Array.isArray(taken)?taken:[]).map(a=>`${a.dia}|${a.hora}`));
+        const lines = DAYS.map(d=>{
+          const free = HOURS.filter(h=>!ts.has(`${d}|${h}`));
+          return free.length ? `<strong>${d}:</strong> ${free.join(', ')}` : null;
+        }).filter(Boolean);
+        if(!lines.length) return {text:'Por el momento no hay horarios disponibles esta semana. Escríbenos para consultarlo.',wa:true};
+        return {text:`📅 <strong>Horarios libres esta semana:</strong><br><br>${lines.join('<br>')}<br><br>Hacé clic en cualquier celda de la tabla de arriba para solicitar ese horario por WhatsApp.`};
+      } catch {
+        return {text:'No pude cargar el horario ahora. Por favor contáctanos.',wa:true};
+      }
+    }
+  },
+  { keys:['funciona','proceso','como es','cómo es','pasos','sistema','metodolog'],
+    text:'Así funciona:<br><br>1️⃣ <strong>Consultá el horario</strong> disponible en la tabla de esta página.<br><br>2️⃣ <strong>Solicitá tu clase</strong> — hacé clic en la celda y se abre WhatsApp con el mensaje listo. Confirmamos y listo.<br><br>3️⃣ <strong>Accedé al portal</strong> — si querés clases regulares, pedí tu cuenta de padre y vas a poder ver notas, reportes de cada clase, tareas y documentos compartidos en tiempo real.'
+  },
+  { keys:['ubica','donde','direc','lugar','direccion','tarapoto','ciudad'],
+    text:'📍 Estamos en <strong>Tarapoto, Perú</strong>. Para la dirección exacta, escríbenos por WhatsApp y te la enviamos.', wa:true
+  },
+  { keys:['costo','precio','cuanto','cuánto','tarifa','cobr','valor','pag'],
+    text:'Los costos varían según el curso y la cantidad de horas. Escríbenos por WhatsApp y te informamos con detalle.', wa:true
+  },
+  { keys:['reporte','informe','seguimiento','registro','clase','dicto','dictó'],
+    text:'📋 Después de cada clase el profesor registra:<br><br>• Temas dictados<br>• Situación académica del alumno<br>• Tareas asignadas<br>• Resultado de evaluaciones<br><br>Todo esto queda visible en tu <strong>portal de padres</strong> en tiempo real.'
+  },
+  { keys:['nota','calificac','evaluac','examen','test'],
+    text:'📊 El sistema registra notas por curso y alumno. El profesor las carga después de cada evaluación y las ves desde tu portal de padres al instante.'
+  },
+  { keys:['tarea','ejercicio','asignac','encargo'],
+    text:'✅ El profesor puede asignar tareas específicas (ej: "leer el texto entregado", "memorizar discurso"). Las verás en tu portal junto al reporte de la clase.'
+  },
+  { keys:['portal','acceso','cuenta','padre','apoderado','usuario','registro'],
+    text:'🔑 El <strong>portal de padres</strong> incluye:<br><br>• Horario fijo de tu hijo<br>• Reportes de cada clase dictada<br>• Notas y evaluaciones<br>• Tareas asignadas<br>• Documentos compartidos con fecha de vencimiento<br><br>Para crear tu cuenta escríbenos por WhatsApp.', wa:true
+  },
+  { keys:['documento','archivo','prueba','material','pdf','test'],
+    text:'📄 El profesor puede compartir documentos (pruebas, material, evaluaciones) directamente con cada padre. Tienen fecha de vencimiento y los podés descargar desde el portal.'
+  },
+  { keys:['hijo','alumno','niño','estudiante','varios','hermano'],
+    text:'Podés registrar <strong>varios hijos</strong> con una sola cuenta de padre. Cada alumno tiene su propio horario, notas, tareas y reportes de clase.'
+  },
+  { keys:['whatsapp','contacto','comunicar','hablar','llamar','mensaje'],
+    text:'Podés escribirnos directamente por WhatsApp para cualquier consulta.', wa:true
+  },
+];
+
+function toggleChat() {
+  _chatOpen = !_chatOpen;
+  document.getElementById('chat-panel').classList.toggle('open', _chatOpen);
+  document.getElementById('ci-open').style.display  = _chatOpen ? 'none' : '';
+  document.getElementById('ci-close').style.display = _chatOpen ? '' : 'none';
+  if (_chatOpen && !_chatInited) { _chatInited = true; _initChat(); }
+  if (_chatOpen) setTimeout(()=>document.getElementById('chat-inp').focus(), 250);
+}
+
+function _initChat() {
+  _addBot('¡Hola! Soy el asistente de la <strong>Academia Murray Rothbard</strong>. ¿En qué te puedo ayudar?');
+  _showQR(QR_MENU);
+}
+
+function _addBot(html) {
+  const m = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'msg msg-bot'; d.innerHTML = html;
+  m.appendChild(d); m.scrollTop = m.scrollHeight;
+}
+
+function _addUser(txt) {
+  const m = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'msg msg-user'; d.textContent = txt;
+  m.appendChild(d); m.scrollTop = m.scrollHeight;
+}
+
+function _showTyping() {
+  const m = document.getElementById('chat-msgs');
+  const d = document.createElement('div');
+  d.className = 'msg-typing'; d.id = 'typing';
+  d.innerHTML = '<span></span><span></span><span></span>';
+  m.appendChild(d); m.scrollTop = m.scrollHeight;
+}
+function _hideTyping(){ const t=document.getElementById('typing'); if(t)t.remove(); }
+
+function _showQR(items) {
+  const w = document.getElementById('qr-wrap'); w.innerHTML = '';
+  items.forEach(item => {
+    const b = document.createElement('button');
+    b.className = 'qr'; b.textContent = item.label;
+    b.onclick = () => _query(item.q, item.label);
+    w.appendChild(b);
+  });
+}
+
+function _clearQR(){ document.getElementById('qr-wrap').innerHTML = ''; }
+
+function _showWA(extra) {
+  const w = document.getElementById('qr-wrap');
+  const bWA = document.createElement('button');
+  bWA.className = 'qr';
+  bWA.style.cssText = 'background:#25D366;color:#fff;border-color:#25D366';
+  bWA.textContent = '💬 Escribir por WhatsApp';
+  bWA.onclick = () => {
+    const msg = encodeURIComponent(extra || 'Hola, quisiera más información sobre la Academia Murray Rothbard.');
+    window.open(`https://wa.me/${WA}?text=${msg}`, '_blank');
+  };
+  w.appendChild(bWA);
+  _appendBack(w);
+}
+
+function _appendBack(w) {
+  const b = document.createElement('button');
+  b.className = 'qr'; b.textContent = '← Menú';
+  b.onclick = () => { _clearQR(); _showQR(QR_MENU); };
+  w.appendChild(b);
+}
+
+async function _query(q, label) {
+  _clearQR();
+  if (label) _addUser(label);
+  _showTyping();
+  await new Promise(r => setTimeout(r, 550));
+  _hideTyping();
+
+  const lq = (q||'').toLowerCase();
+  for (const rule of BOT_RULES) {
+    if (rule.keys.some(k => lq.includes(k))) {
+      let result = rule.fn ? await rule.fn() : {text: rule.text, wa: rule.wa};
+      _addBot(result.text);
+      _clearQR();
+      if (result.wa || rule.wa) {
+        _showWA();
+      } else {
+        _appendBack(document.getElementById('qr-wrap'));
+      }
       return;
     }
-    document.getElementById('err').textContent = '';
-    const btn = document.querySelector('button');
-    btn.disabled = true;
-    btn.textContent = 'Verificando...';
-    try {
-      const res = await fetch(`${SB}/padres?dni=eq.${encodeURIComponent(dni)}`, {headers:H});
-      const padres = await res.json();
-      if (padres.length) {
-        sessionStorage.setItem('auth', JSON.stringify({type:'padre', id:padres[0].id}));
-        location.href = 'padre.html';
-      } else {
-        document.getElementById('err').textContent = 'DNI no encontrado. Consulte con el profesor.';
-      }
-    } catch {
-      document.getElementById('err').textContent = 'Error de conexión. Intente nuevamente.';
-    } finally {
-      btn.disabled = false;
-      btn.textContent = 'Ingresar';
-    }
   }
+  _addBot('Disculpá, no entendí bien. ¿Querés que te contactemos directamente?');
+  _clearQR(); _showWA();
+}
 
-  document.getElementById('dni').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+function chatSend() {
+  const inp = document.getElementById('chat-inp');
+  const q = inp.value.trim(); if(!q) return;
+  inp.value = ''; _query(q, null);
+}
 
-  function toggleSync() {
-    const p = document.getElementById('sync-panel');
-    p.style.display = p.style.display === 'none' ? 'block' : 'none';
-  }
+document.getElementById('chat-inp').addEventListener('keydown', e => { if(e.key==='Enter') chatSend(); });
 
-  function importarSync() {
-    const file = document.getElementById('sync-file').files[0];
-    if (!file) return alert('Selecciona un archivo JSON');
-    const reader = new FileReader();
-    reader.onload = e => {
-      try {
-        JSON.parse(e.target.result);
-        localStorage.setItem('rothbard_db', e.target.result);
-        alert('Datos cargados correctamente. Ya puedes ingresar.');
-        document.getElementById('sync-panel').style.display = 'none';
-      } catch { alert('Archivo inválido'); }
-    };
-    reader.readAsText(file);
-  }
-
-  function solicitarInfo() {
-    const msg = encodeURIComponent('Hola, me interesa obtener información sobre la Academia Murray Rothbard. ¿Me podría brindar más detalles sobre los cursos y horarios disponibles?');
-    window.open('https://wa.me/51994240515?text=' + msg, '_blank');
-  }
+loadSchedule();
 </script>
 </body>
 </html>
