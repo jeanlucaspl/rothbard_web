@@ -138,6 +138,16 @@
     .hijo-section{background:var(--teal-pale);border:1px solid rgba(45,90,86,.15);border-radius:8px;padding:14px;margin-bottom:10px}
     .hijo-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
     .hijo-nombre{font-weight:600;color:var(--teal-dark);font-size:14px}
+
+    /* AUTOCOMPLETE */
+    .ac-wrap{position:relative}
+    .ac-drop{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--white);border:1.5px solid var(--teal);border-radius:8px;z-index:600;max-height:240px;overflow-y:auto;box-shadow:0 4px 20px rgba(0,0,0,.14)}
+    .ac-item{padding:9px 12px;cursor:pointer;border-bottom:1px solid var(--border)}
+    .ac-item:last-child{border-bottom:none}
+    .ac-item:hover{background:var(--teal-pale)}
+    .ac-item strong{display:block;font-size:13px;color:var(--text)}
+    .ac-sub{font-size:11px;color:var(--muted)}
+    .ac-tag{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-bottom:2px}
   </style>
 </head>
 <body>
@@ -237,6 +247,12 @@
         </div>
         <div class="card">
           <div class="card-title">Padres registrados</div>
+          <div class="field" style="margin-bottom:14px">
+            <label>Buscar</label>
+            <div class="ac-wrap" id="ac-wrap-alumnos">
+              <input id="alumnos-search" type="text" placeholder="Apellido o DNI del padre, o nombre del alumno..." autocomplete="off">
+            </div>
+          </div>
           <div id="padres-list"></div>
         </div>
       </div>
@@ -249,7 +265,9 @@
           <div class="card-title">Registrar clase</div>
           <div class="form-row col1">
             <div class="field"><label>Alumno</label>
-              <select id="cl-hijo"><option value="">Seleccionar alumno</option></select>
+              <div class="ac-wrap" id="ac-wrap-cl-hijo">
+                <input id="cl-hijo-ac" type="text" placeholder="Buscar por nombre o apellido..." autocomplete="off">
+              </div>
             </div>
           </div>
           <div class="form-row">
@@ -291,10 +309,10 @@
         <div class="card">
           <div class="card-title">Historial de clases</div>
           <div class="field" style="margin-bottom:12px">
-            <label>Filtrar por alumno</label>
-            <select id="cl-filtro" onchange="renderClases()">
-              <option value="">Todos</option>
-            </select>
+            <label>Filtrar por alumno (dejar vacío para ver todos)</label>
+            <div class="ac-wrap" id="ac-wrap-cl-filtro">
+              <input id="cl-filtro-ac" type="text" placeholder="Buscar alumno..." autocomplete="off">
+            </div>
           </div>
           <div id="clases-list"></div>
         </div>
@@ -371,7 +389,9 @@
     <p class="text-muted" style="margin-bottom:16px" id="modal-slot-info"></p>
     <div class="field">
       <label>Alumno</label>
-      <select id="modal-hijo-sel"><option value="">Seleccionar alumno</option></select>
+      <div class="ac-wrap" id="ac-wrap-modal">
+        <input id="modal-hijo-ac" type="text" placeholder="Buscar por nombre o apellido..." autocomplete="off">
+      </div>
     </div>
     <div class="modal-btns">
       <button class="btn btn-outline" onclick="closeModal('modal-asignar')">Cancelar</button>
@@ -429,6 +449,168 @@ const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Doming
 const DAYS_S = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 const HOURS = ['08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00'];
 const WA = '+51994240515';
+
+// ── DATA CACHE ────────────────────────────────────────────────────────────
+let _hijos = [];
+let _padres = [];
+
+// ── AUTOCOMPLETE HELPER ───────────────────────────────────────────────────
+// itemsFn: () => array — labelFn/subFn: item => string — onSelect: item => void
+function makeAC(inputId, wrapId, itemsFn, labelFn, subFn, onSelect) {
+  const input = document.getElementById(inputId);
+  const wrap  = document.getElementById(wrapId);
+  if (!input || !wrap) return { getId:()=>null, reset:()=>{} };
+  let selId = null, drop = null;
+  const close = () => { if (drop) { drop.remove(); drop = null; } };
+  input.addEventListener('input', () => {
+    close(); selId = null;
+    const q = input.value.trim().toLowerCase();
+    if (!q) { onSelect && onSelect(null); return; }
+    const hits = itemsFn().filter(i =>
+      labelFn(i).toLowerCase().includes(q) || subFn(i).toLowerCase().includes(q)
+    ).slice(0, 8);
+    if (!hits.length) return;
+    drop = document.createElement('div');
+    drop.className = 'ac-drop';
+    hits.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'ac-item';
+      d.innerHTML = `<strong>${labelFn(item)}</strong><span class="ac-sub">${subFn(item)}</span>`;
+      d.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = labelFn(item);
+        selId = item.id;
+        close();
+        onSelect && onSelect(item);
+      });
+      drop.appendChild(d);
+    });
+    wrap.appendChild(drop);
+  });
+  input.addEventListener('blur', () => setTimeout(close, 150));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  return {
+    getId: () => selId,
+    reset() { input.value = ''; selId = null; close(); }
+  };
+}
+
+let acModal, acClHijo, acClFiltro;
+
+function initACs() {
+  const hijoLabel = h => h.nombre;
+  const hijoSub   = h => h.grado || 'Sin grado';
+
+  acModal = makeAC('modal-hijo-ac', 'ac-wrap-modal',
+    () => _hijos, hijoLabel, hijoSub, null);
+
+  acClHijo = makeAC('cl-hijo-ac', 'ac-wrap-cl-hijo',
+    () => _hijos, hijoLabel, hijoSub, null);
+
+  acClFiltro = makeAC('cl-filtro-ac', 'ac-wrap-cl-filtro',
+    () => _hijos, hijoLabel, hijoSub, () => renderClases());
+
+  // Limpiar filtro al borrar manualmente → muestra todos
+  const filtroInput = document.getElementById('cl-filtro-ac');
+  if (filtroInput) filtroInput.addEventListener('input', () => {
+    if (!filtroInput.value.trim()) renderClases();
+  });
+
+  // Buscador de alumnos (sección Alumnos) — con sugerencias mixtas
+  initAlumnosAC();
+}
+
+function initAlumnosAC() {
+  const input = document.getElementById('alumnos-search');
+  const wrap  = document.getElementById('ac-wrap-alumnos');
+  if (!input || !wrap) return;
+  let drop = null;
+  const close = () => { if (drop) { drop.remove(); drop = null; } };
+
+  input.addEventListener('input', () => {
+    close();
+    filtrarAlumnos();
+    const q = input.value.trim().toLowerCase();
+    if (!q) return;
+
+    const sugerencias = [
+      ..._padres.filter(p => p.nombre.toLowerCase().includes(q) || (p.dni||'').includes(q))
+        .map(p => ({ id: p.id, label: p.nombre, sub: `DNI: ${p.dni}`, tag: 'Padre', color: 'var(--teal)' })),
+      ..._hijos.filter(h => h.nombre.toLowerCase().includes(q))
+        .map(h => {
+          const padre = _padres.find(p => p.id === h.padre_id);
+          return { id: h.padre_id, label: h.nombre, sub: `Alumno · Padre: ${padre?.nombre || '—'}`, tag: 'Alumno', color: 'var(--green)' };
+        })
+    ].slice(0, 8);
+
+    if (!sugerencias.length) return;
+    drop = document.createElement('div');
+    drop.className = 'ac-drop';
+    sugerencias.forEach(item => {
+      const d = document.createElement('div');
+      d.className = 'ac-item';
+      d.innerHTML = `<span class="ac-tag" style="color:${item.color}">${item.tag}</span><strong>${item.label}</strong><span class="ac-sub">${item.sub}</span>`;
+      d.addEventListener('mousedown', e => {
+        e.preventDefault();
+        input.value = item.label;
+        close();
+        filtrarAlumnos();
+      });
+      drop.appendChild(d);
+    });
+    wrap.appendChild(drop);
+  });
+  input.addEventListener('blur', () => setTimeout(close, 150));
+  input.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+}
+
+function filtrarAlumnos() {
+  const q = (document.getElementById('alumnos-search')?.value || '').trim().toLowerCase();
+  if (!q) { renderAlumnosList(_padres, _hijos); return; }
+  const padresMatch = _padres.filter(p =>
+    p.nombre.toLowerCase().includes(q) || (p.dni||'').includes(q)
+  );
+  const hijosMatch = _hijos.filter(h => h.nombre.toLowerCase().includes(q));
+  const extraIds = new Set(hijosMatch.map(h => h.padre_id));
+  const padresFiltrados = [
+    ...padresMatch,
+    ..._padres.filter(p => extraIds.has(p.id) && !padresMatch.find(pm => pm.id === p.id))
+  ];
+  renderAlumnosList(padresFiltrados, _hijos);
+}
+
+function renderPadreCard(p, hh) {
+  return `<div class="hijo-section">
+    <div class="hijo-header">
+      <div>
+        <div class="hijo-nombre">${p.nombre}</div>
+        <div style="font-size:12px;color:var(--muted)">DNI: ${p.dni} · Tel: ${p.telefono || '—'}</div>
+      </div>
+      <div class="flex">
+        <button class="btn btn-outline btn-sm" onclick="abrirModalHijo('${p.id}')">+ Hijo</button>
+        <button class="btn btn-danger btn-sm" onclick="eliminarPadre('${p.id}')">✕</button>
+      </div>
+    </div>
+    ${hh.length ? hh.map(h => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--white);border-radius:6px;margin-bottom:6px">
+        <div>
+          <span style="font-weight:500">${h.nombre}</span>
+          <span style="font-size:12px;color:var(--muted);margin-left:8px">${h.grado || ''}</span>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="eliminarHijo('${h.id}')">✕</button>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--muted);padding:4px 0">Sin hijos asignados</div>'}
+  </div>`;
+}
+
+function renderAlumnosList(padres, hijos) {
+  if (!padres.length) {
+    document.getElementById('padres-list').innerHTML = '<div class="empty">Sin resultados</div>';
+    return;
+  }
+  document.getElementById('padres-list').innerHTML = padres.map(p =>
+    renderPadreCard(p, hijos.filter(h => h.padre_id === p.id))
+  ).join('');
+}
 
 function fmtHora(h) {
   const hh = parseInt(h);
@@ -528,17 +710,15 @@ async function cellClick(td) {
   } else {
     pendingSlot = { day, hour };
     document.getElementById('modal-slot-info').textContent = `${day} a las ${hour}`;
-    const hijos = await sbGet('hijos');
-    const sel = document.getElementById('modal-hijo-sel');
-    sel.innerHTML = '<option value="">Seleccionar alumno</option>' +
-      hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+    _hijos = await sbGet('hijos');
+    if (acModal) acModal.reset();
     openModal('modal-asignar');
   }
 }
 
 async function confirmarAsignacion() {
-  const hijoId = document.getElementById('modal-hijo-sel').value;
-  if (!hijoId || !pendingSlot) return alert('Selecciona un alumno');
+  const hijoId = acModal?.getId() || '';
+  if (!hijoId || !pendingSlot) return alert('Selecciona un alumno desde las sugerencias');
   // quitar asignación previa del mismo slot si existe
   await sbDel('horarios_asignados', `dia=${eq(pendingSlot.day)}&hora=${eq(pendingSlot.hour)}`);
   await sbPost('horarios_asignados', {
@@ -604,34 +784,9 @@ async function crearPadre() {
 }
 
 async function renderAlumnos() {
-  const [padres, hijos] = await Promise.all([sbGet('padres'), sbGet('hijos')]);
-  if (!padres.length) {
-    document.getElementById('padres-list').innerHTML = '<div class="empty">Sin padres registrados</div>';
-    return;
-  }
-  document.getElementById('padres-list').innerHTML = padres.map(p => {
-    const hh = hijos.filter(h => h.padre_id === p.id);
-    return `<div class="hijo-section">
-      <div class="hijo-header">
-        <div>
-          <div class="hijo-nombre">${p.nombre}</div>
-          <div style="font-size:12px;color:var(--muted)">DNI: ${p.dni} · Tel: ${p.telefono || '—'}</div>
-        </div>
-        <div class="flex">
-          <button class="btn btn-outline btn-sm" onclick="abrirModalHijo('${p.id}')">+ Hijo</button>
-          <button class="btn btn-danger btn-sm" onclick="eliminarPadre('${p.id}')">✕</button>
-        </div>
-      </div>
-      ${hh.length ? hh.map(h => `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--white);border-radius:6px;margin-bottom:6px">
-          <div>
-            <span style="font-weight:500">${h.nombre}</span>
-            <span style="font-size:12px;color:var(--muted);margin-left:8px">${h.grado || ''}</span>
-          </div>
-          <button class="btn btn-danger btn-sm" onclick="eliminarHijo('${h.id}')">✕</button>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--muted);padding:4px 0">Sin hijos asignados</div>'}
-    </div>`;
-  }).join('');
+  [_padres, _hijos] = await Promise.all([sbGet('padres'), sbGet('hijos')]);
+  initAlumnosAC();
+  filtrarAlumnos();
 }
 
 function abrirModalHijo(padreId) {
@@ -675,10 +830,9 @@ async function eliminarHijo(id) {
 
 // ── CLASES ────────────────────────────────────────────────────────────────
 async function populateHijoSelects() {
-  const hijos = await sbGet('hijos');
-  const opts = '<option value="">Seleccionar</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
-  document.getElementById('cl-hijo').innerHTML = opts;
-  document.getElementById('cl-filtro').innerHTML = '<option value="">Todos</option>' + hijos.map(h => `<option value="${h.id}">${h.nombre}</option>`).join('');
+  _hijos = await sbGet('hijos');
+  if (acClHijo) acClHijo.reset();
+  if (acClFiltro) acClFiltro.reset();
   const horaOpts = '<option value="">--</option>' + HOURS.map(h => `<option value="${h}">${h}</option>`).join('');
   document.getElementById('cl-hora-ini').innerHTML = horaOpts;
   document.getElementById('cl-hora-fin').innerHTML = horaOpts;
@@ -686,11 +840,11 @@ async function populateHijoSelects() {
 }
 
 async function registrarClase() {
-  const hijoId = document.getElementById('cl-hijo').value;
+  const hijoId = acClHijo?.getId() || '';
   const fecha = document.getElementById('cl-fecha').value;
   const horaIni = document.getElementById('cl-hora-ini').value;
   const horaFin = document.getElementById('cl-hora-fin').value;
-  if (!hijoId || !fecha || !horaIni || !horaFin) return alert('Completa alumno, fecha y rango de hora');
+  if (!hijoId || !fecha || !horaIni || !horaFin) return alert('Completa alumno (selecciónalo desde las sugerencias), fecha y rango de hora');
   const hora = horaIni === horaFin ? horaIni : `${horaIni} - ${horaFin}`;
   const nuevaClase = {
     id: uid(),
@@ -717,7 +871,8 @@ async function registrarClase() {
 }
 
 async function renderClases() {
-  const filtro = document.getElementById('cl-filtro')?.value || '';
+  const inputVal = document.getElementById('cl-filtro-ac')?.value.trim() || '';
+  const filtro = inputVal ? (acClFiltro?.getId() || '') : '';
   const q = filtro ? `hijo_id=${eq(filtro)}&order=fecha.desc` : 'order=fecha.desc';
   const [clases, hijos] = await Promise.all([sbGet('clases', q), sbGet('hijos')]);
   if (!clases.length) { document.getElementById('clases-list').innerHTML = '<div class="empty">Sin clases registradas</div>'; return; }
@@ -969,6 +1124,7 @@ document.querySelectorAll('.modal-bg').forEach(m => {
 });
 
 // ── INIT ──────────────────────────────────────────────────────────────────
+initACs();
 renderPanel();
 </script>
 </body>
