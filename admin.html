@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin — Academia Murray Rothbard</title>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     :root{
@@ -1012,10 +1014,65 @@ async function vistaPrevia(claseId) {
 async function descargarPDF(claseId) {
   const html = await buildReporteHTML(claseId);
   if (!html) return;
-  const htmlConPrint = html.replace('</body>', `<script>window.onload=()=>window.print()<\/script></body>`);
-  const w = window.open('', '_blank');
-  w.document.write(htmlConPrint);
-  w.document.close();
+
+  // Extraer estilos y cuerpo del HTML generado
+  const styleMatch = html.match(/<style>([\s\S]*?)<\/style>/i);
+  const bodyMatch  = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+  if (!bodyMatch) return;
+
+  // Inyectar estilos temporalmente (sin @page ni @media print)
+  const styleEl = document.createElement('style');
+  styleEl.id = '__pdf_tmp';
+  if (styleMatch) styleEl.textContent = styleMatch[1].replace(/@page[\s\S]*?\}|@media\s+print[\s\S]*$/, '');
+  document.head.appendChild(styleEl);
+
+  // Contenedor offscreen A4 (794px ≈ 210mm @ 96dpi)
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'position:fixed;left:-9999px;top:0;width:794px;background:#fff;padding:28px;box-sizing:border-box;font-family:Inter,sans-serif;';
+  wrap.innerHTML = bodyMatch[1];
+  document.body.appendChild(wrap);
+
+  // Esperar imágenes
+  await Promise.all([...wrap.querySelectorAll('img')].map(img =>
+    new Promise(r => { if (img.complete) r(); else { img.onload = r; img.onerror = r; } })
+  ));
+  await new Promise(r => setTimeout(r, 500));
+
+  try {
+    const canvas = await html2canvas(wrap, {
+      scale: 2, useCORS: true, allowTaint: true,
+      logging: false, backgroundColor: '#ffffff'
+    });
+
+    const { jsPDF } = window.jspdf;
+    const pdf  = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pW   = pdf.internal.pageSize.getWidth();   // 210mm
+    const pH   = pdf.internal.pageSize.getHeight();  // 297mm
+    const scale = canvas.width / pW;
+    const pageH = Math.round(pH * scale);
+
+    // Recortar en páginas A4
+    const tmp = document.createElement('canvas');
+    tmp.width  = canvas.width;
+    tmp.height = pageH;
+    const ctx = tmp.getContext('2d');
+    let srcY = 0;
+    while (srcY < canvas.height) {
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(0, 0, tmp.width, tmp.height);
+      ctx.drawImage(canvas, 0, srcY, canvas.width, pageH, 0, 0, canvas.width, pageH);
+      pdf.addImage(tmp.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, pW, pH);
+      srcY += pageH;
+      if (srcY < canvas.height) pdf.addPage();
+    }
+
+    // Nombre del archivo con nombre del alumno
+    const alumno = (wrap.querySelector('.val')?.textContent || 'informe').trim().replace(/\s+/g, '_');
+    pdf.save(`informe_${alumno}_${new Date().toISOString().slice(0,10)}.pdf`);
+  } finally {
+    document.body.removeChild(wrap);
+    document.head.removeChild(styleEl);
+  }
 }
 
 // ── NOTAS ─────────────────────────────────────────────────────────────────
