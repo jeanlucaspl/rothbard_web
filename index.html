@@ -122,7 +122,30 @@
     @media(max-width:480px){
       .chat-panel{width:calc(100vw - 32px);right:16px;bottom:80px}
       .chat-btn{bottom:16px;right:16px}
+      .chat-lbl{right:16px;bottom:82px}
     }
+
+    /* chat label pill */
+    .chat-lbl{position:fixed;bottom:92px;right:24px;z-index:9999;background:var(--teal-dark);color:var(--cream);font-size:12px;font-weight:600;padding:9px 15px;border-radius:20px;cursor:pointer;box-shadow:0 3px 16px rgba(45,90,86,.32);display:flex;align-items:center;gap:7px;white-space:nowrap;animation:chatSlideIn .5s ease .9s both;transition:opacity .25s,transform .25s}
+    .chat-lbl .pulse-dot{width:8px;height:8px;border-radius:50%;background:#4ade80;flex-shrink:0;animation:dotPulse 1.8s ease infinite}
+    .chat-lbl::after{content:'';position:absolute;bottom:-6px;right:26px;width:10px;height:10px;background:var(--teal-dark);transform:rotate(45deg);border-radius:1px}
+    .chat-lbl.hidden{opacity:0;pointer-events:none;transform:translateY(6px)}
+    @keyframes chatSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes dotPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+
+    /* mini schedule grid (inside chatbot message) */
+    .ms-wrap{display:inline-block;border:1px solid rgba(45,90,86,.2);border-radius:7px;overflow:hidden;margin:6px 0}
+    .ms-row{display:flex}
+    .ms-lbl{width:26px;background:rgba(45,90,86,.07);font-size:8.5px;color:var(--muted);display:flex;align-items:center;justify-content:flex-end;padding-right:3px;border-bottom:1px solid rgba(45,90,86,.08)}
+    .ms-hdr{width:26px;background:var(--teal-dark)}
+    .ms-dh{width:23px;height:20px;background:var(--teal-dark);color:var(--cream);font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
+    .ms-cell{width:23px;height:19px;border:1px solid rgba(45,90,86,.08)}
+    .ms-cell.f{background:#fff;cursor:pointer}
+    .ms-cell.f:hover{background:#EBF4F3}
+    .ms-cell.t{background:#FDDEDE}
+    .ms-legend{display:flex;gap:10px;margin-top:5px;font-size:9.5px;color:var(--muted)}
+    .ms-legend span{display:flex;align-items:center;gap:3px}
+    .ms-legend i{width:9px;height:9px;border-radius:2px;display:inline-block;flex-shrink:0}
   </style>
 </head>
 <body>
@@ -214,6 +237,10 @@
 </div>
 
 <!-- CHATBOT WIDGET -->
+<div class="chat-lbl" id="chat-lbl" onclick="toggleChat()">
+  <span class="pulse-dot"></span>
+  Consulta aquí
+</div>
 <button class="chat-btn" id="chat-toggle" onclick="toggleChat()" title="Asistente">
   <svg id="ci-open" width="22" height="22" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.17L4 17.17V4h16v12z"/></svg>
   <svg id="ci-close" width="22" height="22" fill="white" viewBox="0 0 24 24" style="display:none"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
@@ -345,12 +372,27 @@ const BOT_RULES = [
         const r = await fetch(`${SB}/horarios_asignados?activo=eq.true`,{headers:H});
         const taken = await r.json();
         const ts = new Set((Array.isArray(taken)?taken:[]).map(a=>`${a.dia}|${a.hora}`));
-        const lines = DAYS.map(d=>{
-          const free = HOURS.filter(h=>!ts.has(`${d}|${h}`));
-          return free.length ? `<strong>${d}:</strong> ${free.join(', ')}` : null;
-        }).filter(Boolean);
-        if(!lines.length) return {text:'Por el momento no hay horarios disponibles esta semana. Escríbenos para consultarlo.',wa:true};
-        return {text:`📅 <strong>Horarios libres esta semana:</strong><br><br>${lines.join('<br>')}<br><br>Hacé clic en cualquier celda de la tabla de arriba para solicitar ese horario por WhatsApp.`};
+        const DL = ['L','M','X','J','V','S'];
+        const HL = ['8a','9a','10a','11a','12p','1p','2p','3p','4p','5p','6p','7p','8p','9p'];
+        let g = `<div class='ms-wrap'><div class='ms-row'>`;
+        g += `<div class='ms-hdr'></div>`;
+        DAYS.forEach((_,i)=> g+=`<div class='ms-dh'>${DL[i]}</div>`);
+        g += `</div>`;
+        HOURS.forEach((h,i)=>{
+          g += `<div class='ms-row'><div class='ms-lbl'>${HL[i]}</div>`;
+          DAYS.forEach(day=>{
+            if(ts.has(`${day}|${h}`)){
+              g += `<div class='ms-cell t'></div>`;
+            } else {
+              const msg = encodeURIComponent(`Hola, quisiera solicitar una clase el ${day} a las ${h}. ¿Está disponible?`);
+              g += `<div class='ms-cell f' onclick="window.open('https://wa.me/${WA}?text=${msg}','_blank')" title='${day} ${h}'></div>`;
+            }
+          });
+          g += `</div>`;
+        });
+        g += `</div>`;
+        g += `<div class='ms-legend'><span><i style='background:#fff;border:1px solid #ccc'></i>Libre (clic→WA)</span><span><i style='background:#FDDEDE;border:1px solid #F5AEAE'></i>Ocupado</span></div>`;
+        return {text: g};
       } catch {
         return {text:'No pude cargar el horario ahora. Por favor contáctanos.',wa:true};
       }
@@ -393,6 +435,7 @@ function toggleChat() {
   document.getElementById('chat-panel').classList.toggle('open', _chatOpen);
   document.getElementById('ci-open').style.display  = _chatOpen ? 'none' : '';
   document.getElementById('ci-close').style.display = _chatOpen ? '' : 'none';
+  if (_chatOpen) document.getElementById('chat-lbl').classList.add('hidden');
   if (_chatOpen && !_chatInited) { _chatInited = true; _initChat(); }
   if (_chatOpen) setTimeout(()=>document.getElementById('chat-inp').focus(), 250);
 }
